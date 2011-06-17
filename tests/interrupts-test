@@ -1,0 +1,8 @@
+            CPU0       CPU1       CPU2       CPU3       
+  54:          6          6          7         10   PCI-MSI-edge      eth0-TxRx-0
+  55:          0          0          0          0   PCI-MSI-edge      eth0-TxRx-1
+  56:          4          2          2          2   PCI-MSI-edge      eth0-TxRx-2
+  57:          1          0          0          0   PCI-MSI-edge      eth0-TxRx-3
+  62:          0          0          0          0   PCI-MSI-edge      eth0:lsc
+  63:          0          0          1          0   PCI-MSI-edge      eth1
+  64:        901        872        879        869   PCI-MSI-edge      eth1-TxRx-0

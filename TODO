@@ -1,0 +1,4 @@
+* use sysfs to read CPU info (road to 'CPU hotplug')
+* time_squeeze?
+* when not daemonizing log lines have two newlines
+* ban IRQs?

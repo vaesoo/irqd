@@ -1,0 +1,3 @@
+           CPU0       CPU1       CPU2       CPU3       
+ 16:      26442      26174      26655      26452   IO-APIC-fasteoi   uhci_hcd:usb3, pata_marvell, nvidia, eth1
+ 46:     198430     198763     199078     198756   PCI-MSI-edge      eth0

@@ -1,0 +1,83 @@
+#!/bin/sh
+#
+# Copyright (C) 2011 Astaro AG
+# For copyright information look at /doc/astaro-license.txt
+# or http://www.astaro.com/doc/astaro-license.txt
+#
+# Holger Eitzenberger <heitzenberger@astaro.com>
+#
+### BEGIN INIT INFO
+# Provides:          irqd
+# Default-Start:     3
+# Default-Stop:
+# Description:       CPU balancer
+### END INIT INFO
+
+. /lib/lsb/init-functions
+
+PNAME="CPU Balancer"
+IRQD=/usr/sbin/irqd
+NOSELFMON=/etc/no-selfmonitor/irqd
+
+test -x $IRQD || exit 5
+
+NCPUS=$(grep ^processor /proc/cpuinfo | wc -l)
+
+rc_reset
+
+case "$1" in
+start)
+	echo -n ":: Starting $PNAME"
+	touch $NOSELFMON
+	if [ "$NCPUS" = "1" ] ; then
+		rc_status -s
+		rc_exit
+	fi
+	startproc -q $IRQD
+	rc_status -v
+	rm -f $NOSELFMON
+	;;
+stop)
+	echo -n ":: Stopping $PNAME"
+	touch $NOSELFMON
+	killproc -TERM $IRQD
+	rc_status -v
+	;;
+try-restart)
+	$0 status >/dev/null &&  $0 restart
+	rc_status
+	;;
+restart | force-reload )
+	echo -e ${attn}":: Restarting $PNAME"${norm}
+	touch $NOSELFMON
+	$0 stop
+	$0 start
+	rc_status
+	rm -f $NOSELFMON
+	;;
+reload)
+    echo -n -e ${attn}":: Reconfigure $PNAME"${norm}
+	/sbin/killproc -HUP ${IRQD##*/}
+	rc_status -v
+	;;
+status)
+	echo -n ":: Checking status for service $PNAME"
+	if checkproc $IRQD ; then
+		rc_failed 0				# service running
+	else
+		rc_failed 3				# service not running
+	fi
+	rc_status -v
+	;;
+probe)
+	echo -n ":: Probe for reload of service $PNAME"
+	rc_status -u
+	;;
+*)
+	echo "Usage: $0 {start|stop|status|try-restart|restart|force-reload|reload|probe}"
+	exit 1
+	;;
+esac
+
+rc_exit
+

@@ -1,0 +1,2 @@
+            CPU0       CPU1       CPU2       CPU3       
+  54:          6          6          7         10   PCI-MSI-edge      eth0, eth1

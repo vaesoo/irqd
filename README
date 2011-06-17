@@ -1,0 +1,74 @@
+IRQBALANCE
+
+What irqbalance does: by default smp_affinity 'ff' is set by
+the kernel.  At the time of an imbalance (determined by parsing
+/proc/interrupts) IRQs are reassigned to a different CPU.
+
+CASES
+
+* 625:eth0
+
+ $ ethtool -i eth0
+ driver: igb
+ version: 2.4.13
+ firmware-version: 1.13-1
+ bus-info: 0000:15:00.1
+
+ $ ls -1 /sys/class/net/eth0/queues
+ rx-0
+ rx-1
+ rx-10
+ rx-11
+ rx-12
+ rx-13
+ rx-14
+ rx-15
+ rx-2
+ rx-3
+ rx-4
+ rx-5
+ rx-6
+ rx-7
+ rx-8
+ rx-9
+
+* 625:eth10
+
+ $ ethtool -i eth10
+ driver: ixgbe
+ version: 3.2.9-NAPI
+ firmware-version: 1.7-1
+ bus-info: 0000:0c:00.1
+
+ $ ethtool -i eth10
+ rx-0
+ rx-1
+ rx-2
+ rx-3
+ rx-4
+ rx-5
+ rx-6
+ rx-7
+
+* 625:eth2
+
+ $ ethtool -i eth2
+ driver: e1000e
+ version: 1.3.10a-NAPI
+ firmware-version: 5.6-2
+ bus-info: 0000:0a:00.0
+
+ $ ls /sys/class/net/eth2/queues
+ rx-0
+
+STRATEGY
+
+1. each multiqueue NIC is balanced over as much CPUs as possible.
+   IRQs smp_affinity is set to the same CPU.
+
+2. for non-multiqueue NICs do it similarly to irqbalance: at the time
+   on a imbalance redestribute to other CPUs, but determine not
+   by just looking at IRQ counters.
+
+3. ???
+
