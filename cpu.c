@@ -376,8 +376,10 @@ cpu_dump_map(void)
 	/* do not use _PATH_VARDB, as on sles11 it points to /var/db,
 	   which doesn't exist, */
 	snprintf(path, sizeof(path), "/var/lib/misc/%s", CPU_MAP_FILE);
-	if ((fp = fopen(path, "w")) == NULL)
+	if ((fp = fopen(path, "w")) == NULL) {
+		g_free(line);
 		return;
+	}
 
 	for (cpu = 0; cpu < num_cpus; cpu++) {
 		char *pch = line, *end = line + 4096;
