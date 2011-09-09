@@ -159,16 +159,30 @@ if_set_rps_cpus(const struct interface *iface, int queue, uint64_t mask)
 	return 0;
 }
 
+/**
+ * @return 1: found, 0: not found, <0 error
+ */
 static int
-get_mq_queue(const char *tok, const char *dev)
+parse_irq_action(const char *tok, const char *dev, int *queue)
 {
 	char pattern[32];
-	unsigned queue;
 
+	/* this may be just a LSC IRQ */
+	if (!strcmp(tok, dev)) {
+		*queue = 0;
+		return 1;
+	}
+		
 	snprintf(pattern, sizeof(pattern), "%s-TxRx-%%u", dev);
-	if (sscanf(tok, pattern, &queue) != 1)
-		return -1;
-	return queue;
+	if (sscanf(tok, pattern, queue) == 1) 
+		return 1;
+
+	/* Broadcom NICs (netxen, bnx2) */
+	snprintf(pattern, sizeof(pattern), "%s[%%u]", dev);
+	if (sscanf(tok, pattern, queue) == 1)
+		return 1;
+
+	return 0;
 }
 
 static struct if_queue_info *
@@ -234,23 +248,20 @@ next_line:
 			if ((tok = strtok_r(NULL, " \t", &saveptr)) == NULL)
 				goto next_line;
 
-		/* flags */
+		/* chip */
 		if ((tok = strtok_r(NULL, " \t", &saveptr)) == NULL)
 			continue;
 		
-		/* devices */
+		/* action */
 		do {
 			int queue = 0;
 
 			if ((tok = strtok_r(NULL, " \t,", &saveptr)) == NULL)
 				break;
 
+			if (parse_irq_action(tok, iface->if_name, &queue) == 1)
+				qi = if_add_queue(iface, queue, irq);
 			devs++;
-			if (!strcmp(tok, iface->if_name))
-				/* this may be just a LSC IRQ */
-				qi = if_add_queue(iface, queue, irq);
-			else if ((queue = get_mq_queue(tok, iface->if_name)) >= 0)
-				qi = if_add_queue(iface, queue, irq);
 		} while (1);
 
 		if (qi && devs > 1)
