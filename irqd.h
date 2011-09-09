@@ -36,7 +36,7 @@
 #include <sys/time.h>
 #include <glib-2.0/glib.h>
 
-#define IRQD_VERSION	"0.6"
+#define IRQD_VERSION	"0.6.1"
 
 #define CPU_MAX			64
 
