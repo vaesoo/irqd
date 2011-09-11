@@ -276,7 +276,7 @@ err_free:
 }
 
 static int
-rtnl_link_up(struct rtnl_link *link, const char *dev)
+rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 {
 	struct interface *iface;
 	int i;
@@ -303,7 +303,7 @@ rtnl_link_up(struct rtnl_link *link, const char *dev)
 }
 
 static int
-rtnl_link_down(struct rtnl_link *link, const char *dev)
+rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 {
 	struct interface *iface;
 	int queue;
@@ -330,14 +330,14 @@ rtnl_link_down(struct rtnl_link *link, const char *dev)
 }
 
 static int
-rtnl_balance_link(struct rtnl_link *link)
+rtnl_balance_link(struct rtnl_link *lnk)
 {
 	struct interface *iface;
 	const char *dev;
 	int flags;
 	bool change = false;
 
-	if ((dev = rtnl_link_get_name(link)) == NULL)
+	if ((dev = rtnl_link_get_name(lnk)) == NULL)
 		return 0;
 	if (strncmp(dev, "eth", 3))
 		return 0;
@@ -349,13 +349,13 @@ rtnl_balance_link(struct rtnl_link *link)
 		g_hash_table_insert(if_hash, strdup(dev), iface);
 	}
 
-	flags = rtnl_link_get_flags(link);
+	flags = rtnl_link_get_flags(lnk);
 	if ((iface->if_flags & IFF_UP) == 0 && (flags & IFF_UP)) {
-		if (rtnl_link_up(link, dev) < 0)
+		if (rtnl_link_up(lnk, dev) < 0)
 			goto err;
 		change = true;
 	} else if ((iface->if_flags & IFF_UP) && (flags & IFF_UP) == 0) {
-		if (rtnl_link_down(link, dev) < 0)
+		if (rtnl_link_down(lnk, dev) < 0)
 			goto err;
 		change = true;
 	}
@@ -570,6 +570,7 @@ rebalance_cb(struct ev *ev, unsigned short what)
 
 	BUG_ON(what != EV_READ);
 	nread = read(ev->fd, &exp, sizeof(exp));
+	BUG_ON(nread != sizeof(exp));
 
 	cpu_read_stat();
 	read_net_device_stats();
