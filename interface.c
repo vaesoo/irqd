@@ -129,12 +129,6 @@ rtnl_io_cb(struct ev *ev, unsigned short what)
 	return 0;
 }
 
-char *
-if_index2name(int ifi, char *dst, size_t len)
-{
-	return rtnl_link_i2name(cache, ifi, dst, len);
-}
-
 int
 if_set_rps_cpus(const struct interface *iface, int queue, uint64_t mask)
 {
