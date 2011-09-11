@@ -329,7 +329,7 @@ rtnl_link_down(struct rtnl_link *link, const char *dev)
 	return 0;
 }
 
-int
+static int
 rtnl_balance_link(struct rtnl_link *link)
 {
 	struct interface *iface;
@@ -561,7 +561,7 @@ err:
 	return -1;
 }
 
-enum EvReturn
+static enum EvReturn
 rebalance_cb(struct ev *ev, unsigned short what)
 {
 	static int turn;
@@ -634,7 +634,7 @@ rebalance_init(void)
 	return 0;
 }
 
-void
+static void
 rtnl_interface_cb(struct nl_object *obj, void *arg)
 {
 	char buf[128];
