@@ -114,35 +114,6 @@ xstrncpy(char *dst, const char *src, size_t n)
 	return dst;
 }
 
-static int
-daemonize(void)
-{
-    int fd;
-
-    switch (fork()) {
-    case -1:
-        return (-1);
-    case 0:
-        break;
-    default:
-        _exit(0);
-    }
-
-    if (setsid() == -1)
-        return (-1);
-
-	chdir("/");
-
-    if ((fd = open(_PATH_DEVNULL, O_RDWR, 0)) != -1) {
-        dup2(fd, STDIN_FILENO);
-        dup2(fd, STDOUT_FILENO);
-        dup2(fd, STDERR_FILENO);
-        if (fd > 2)
-            close (fd);
-    }
-
-    return 0;
-}
 
 static void
 irqd_at_exit(void)
@@ -213,8 +184,11 @@ main(int argc, char *argv[])
 		exit(0);
 	}
 
-	if (!no_daemon)
-		daemonize();
+	if (!no_daemon && daemon(0, 0) < 0) {
+		err("can't start daemon\n");
+		exit(1);
+	}
+
 	if (write_pid() < 0)
 		exit(1);
 
