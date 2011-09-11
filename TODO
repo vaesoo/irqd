@@ -1,4 +1,13 @@
-* use sysfs to read CPU info (road to 'CPU hotplug')
-* time_squeeze?
+* implement non-RPS balancing (requires some performance testing)
+
+* balance non-NIC IRQs
+
+* implement other strategy, which uses less CPUs
+
 * when not daemonizing log lines have two newlines
-* ban IRQs?
+
+* use sysfs to read CPU info (road to 'CPU hotplug')
+
+* make configurable
+
+* configuration: ban some IRQs?
