@@ -1,74 +1,59 @@
-IRQBALANCE
+README
+------
 
-What irqbalance does: by default smp_affinity 'ff' is set by
-the kernel.  At the time of an imbalance (determined by parsing
-/proc/interrupts) IRQs are reassigned to a different CPU.
+This is irqd, an alternative IRQ balancer Linux kernels.  It balances
+the IRQs more or less evenly across the CPUs you have in your system.
 
-CASES
+As of version 0.6.2 it requires glib-2.0 and libnl-3.0 to compile.
 
-* 625:eth0
+It currently relies on the Receive Packet Steering (RPS)
+implementation of newer Linux kernels, it is of less use currently if
+RPS is not available.  For details on RPS see the very good article
+from LWN: http://lwn.net/Articles/362339.
 
- $ ethtool -i eth0
- driver: igb
- version: 2.4.13
- firmware-version: 1.13-1
- bus-info: 0000:15:00.1
-
- $ ls -1 /sys/class/net/eth0/queues
- rx-0
- rx-1
- rx-10
- rx-11
- rx-12
- rx-13
- rx-14
- rx-15
- rx-2
- rx-3
- rx-4
- rx-5
- rx-6
- rx-7
- rx-8
- rx-9
-
-* 625:eth10
-
- $ ethtool -i eth10
- driver: ixgbe
- version: 3.2.9-NAPI
- firmware-version: 1.7-1
- bus-info: 0000:0c:00.1
-
- $ ethtool -i eth10
- rx-0
- rx-1
- rx-2
- rx-3
- rx-4
- rx-5
- rx-6
- rx-7
-
-* 625:eth2
-
- $ ethtool -i eth2
- driver: e1000e
- version: 1.3.10a-NAPI
- firmware-version: 5.6-2
- bus-info: 0000:0a:00.0
-
- $ ls /sys/class/net/eth2/queues
- rx-0
 
 STRATEGY
+--------
+
+It currently implements the most gainfull cases only:
 
 1. each multiqueue NIC is balanced over as much CPUs as possible.
-   IRQs smp_affinity is set to the same CPU.
 
-2. for non-multiqueue NICs do it similarly to irqbalance: at the time
-   on a imbalance redestribute to other CPUs, but determine not
-   by just looking at IRQ counters.
+2. for singlequeue NICs start with assigning two CPUs per IRQs.  This
+   way you should experience an improvement over the existing
+   right from the start.
 
-3. ???
+3. for singlequeue NICs it will currently assign up to four CPUs
+   per IRQ.
 
+4. for non-RPS kernels it just balances multiqueue NICs.  Singlequeue
+   NICs on non-RPS kernels will be addressed in the future.
+
+Implementation of irqd is currently ongoing.
+
+
+RUNNING
+-------
+
+irqd is currently very minimalistic, only serving a very dedicated
+purpose.  It reports the current IRQ mapping to the different
+CPUs to the file /var/lib/misc/irqd.cpumap.  Example contents:
+
+cpu0: eth0:0 eth1:2                                                           
+cpu1: eth0:0 eth1:3                                                           
+cpu2: eth1:0                                                                  
+cpu3: eth1:1                                                                  
+
+Here eth0 being a singlequeue NIC and eth1 being multiqueue (with four
+queues).
+
+
+BUGS
+----
+
+irqd may contain bugs.  Any bug report and/or feature request is
+welcomed, but please look at the TODO file contained before
+making a request.
+
+-- 
+Holger Eitzenberger <holger@eitzenberger.org>
