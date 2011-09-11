@@ -1,16 +1,10 @@
 #!/bin/sh
-#
-# Copyright (C) 2011 Astaro AG
-# For copyright information look at /doc/astaro-license.txt
-# or http://www.astaro.com/doc/astaro-license.txt
-#
-# Holger Eitzenberger <heitzenberger@astaro.com>
-#
+
 ### BEGIN INIT INFO
 # Provides:          irqd
 # Default-Start:     3
 # Default-Stop:
-# Description:       CPU balancer
+# Description:       Alternative IRQ balancer
 ### END INIT INFO
 
 . /lib/lsb/init-functions
