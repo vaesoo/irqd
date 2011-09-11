@@ -15,69 +15,59 @@
 
 . /lib/lsb/init-functions
 
-PNAME="CPU Balancer"
 IRQD=/usr/sbin/irqd
+PIDFILE=/var/run/irqd.pid
 NOSELFMON=/etc/no-selfmonitor/irqd
 
 test -x $IRQD || exit 5
 
 NCPUS=$(grep ^processor /proc/cpuinfo | wc -l)
 
-rc_reset
-
 case "$1" in
-start)
-	echo -n ":: Starting $PNAME"
-	touch $NOSELFMON
+    start)
 	if [ "$NCPUS" = "1" ] ; then
-		rc_status -s
-		rc_exit
+	    log_warning_msg "irqd disabled on single CPU"
+	    exit 0
 	fi
-	startproc -q $IRQD
-	rc_status -v
+
+	mkdir -p /etc/no-selfmonitor
+	touch $NOSELFMON
+	log_daemon_msg "Starting IRQ Daemon" "irqd"
+	start-stop-daemon --start --quiet --oknodo --exec $IRQD
+	log_end_msg $?
 	rm -f $NOSELFMON
 	;;
-stop)
-	echo -n ":: Stopping $PNAME"
+    stop)
+	log_daemon_msg "Stopping IRQ Daemon" "irqd"
 	touch $NOSELFMON
-	killproc -TERM $IRQD
-	rc_status -v
+	start-stop-daemon --stop --quiet --oknodo --pidfile $PIDFILE
+	log_end_msg $?
 	;;
-try-restart)
+    try-restart)
 	$0 status >/dev/null &&  $0 restart
 	rc_status
 	;;
-restart | force-reload )
-	echo -e ${attn}":: Restarting $PNAME"${norm}
+    restart | force-reload )
+	log_deamon_msg "Restarting IRQ Daemon" "irqd"
+	start-stop-daemon --stop --quiet --oknodo --retry 30 --pidfile $PIDFILE
 	touch $NOSELFMON
 	$0 stop
 	$0 start
-	rc_status
 	rm -f $NOSELFMON
 	;;
-reload)
-    echo -n -e ${attn}":: Reconfigure $PNAME"${norm}
-	/sbin/killproc -HUP ${IRQD##*/}
-	rc_status -v
+    reload)
+	log_daemon_msg "Reloading IRQ Daemon" "irqd"
+	start-stop-daemon --stop --signal 1 --quiet --oknod --pidfile $PIDFILE --exec $IRQD
+	log_end_msg $?a    
 	;;
-status)
-	echo -n ":: Checking status for service $PNAME"
-	if checkproc $IRQD ; then
-		rc_failed 0				# service running
-	else
-		rc_failed 3				# service not running
-	fi
-	rc_status -v
+    status)
+	status_of_proc -p $PIDFILE /$IRQD irqd && exit 0 || exit %?
 	;;
-probe)
-	echo -n ":: Probe for reload of service $PNAME"
-	rc_status -u
-	;;
-*)
-	echo "Usage: $0 {start|stop|status|try-restart|restart|force-reload|reload|probe}"
+    *)
+	echo "Usage: $0 {start|stop|status|try-restart|restart|force-reload|reload}"
 	exit 1
 	;;
 esac
 
-rc_exit
+exit 0
 
