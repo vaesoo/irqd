@@ -45,7 +45,7 @@ static enum RpsStatus {
 	RPS_S_DISABLED,
 	RPS_S_ENABLED,
 } rps_status;
-static struct nl_handle *nlh;
+static struct nl_sock *nlh;
 static struct nl_cache *nlcache;
 static struct nl_cache_mngr *mngr;
 static struct ev nl_ev;
@@ -639,7 +639,7 @@ rtnl_interface_cb(struct nl_object *obj, void *arg)
 {
 	char buf[128];
 	struct nl_dump_params dp = {
-		.dp_type = NL_DUMP_BRIEF,
+		.dp_type = NL_DUMP_LINE,
 		.dp_buf = buf,
 		.dp_buflen = sizeof(buf),
 	};
@@ -652,11 +652,12 @@ rtnl_interface_cb(struct nl_object *obj, void *arg)
 }
 
 static void
-rtnl_change_cb(struct nl_cache *cache, struct nl_object *obj, int action)
+rtnl_change_cb(struct nl_cache *cache, struct nl_object *obj, int action,
+	void *arg)
 {
 	char buf[128];
 	struct nl_dump_params dp = {
-		.dp_type = NL_DUMP_BRIEF,
+		.dp_type = NL_DUMP_LINE,
 		.dp_buf = buf,
 		.dp_buflen = sizeof(buf),
 	};
@@ -671,6 +672,8 @@ rtnl_change_cb(struct nl_cache *cache, struct nl_object *obj, int action)
 int
 if_init(void)
 {
+	int ret;
+
 	BUG_ON(!cpu_count());
 	if_hash = g_hash_table_new_full(g_str_hash, g_str_equal, free, NULL);
 	if (!if_hash) {
@@ -678,22 +681,23 @@ if_init(void)
 		return -1;
 	}
 
-	if ((nlh = nl_handle_alloc()) == NULL) {
+	if ((nlh = nl_socket_alloc()) == NULL) {
 		err("unable to allocate netlink handle");
 		return -1;
 	}
 
-	nl_disable_sequence_check(nlh);
+	nl_socket_disable_seq_check(nlh);
 
-	mngr = nl_cache_mngr_alloc(nlh, NETLINK_ROUTE, NL_AUTO_PROVIDE);
-	if (!mngr) {
-		err("%s\n", nl_geterror());
+	ret = nl_cache_mngr_alloc(nlh, NETLINK_ROUTE, NL_AUTO_PROVIDE, &mngr);
+	if (ret < 0) {
+		err("%s\n", nl_geterror(ret));
 		return -1;
 	}
 
-	nlcache = nl_cache_mngr_add(mngr, "route/link", rtnl_change_cb);
-	if (!nlcache) {
-		err("%s\n", nl_geterror());
+	ret = nl_cache_mngr_add(mngr, "route/link", rtnl_change_cb, NULL,
+							&nlcache);
+	if (ret < 0) {
+		err("%s\n", nl_geterror(ret));
 		return -1;
 	}
 
