@@ -46,7 +46,7 @@ static enum RpsStatus {
 	RPS_S_ENABLED,
 } rps_status;
 static struct nl_handle *nlh;
-static struct nl_cache *cache;
+static struct nl_cache *nlcache;
 static struct nl_cache_mngr *mngr;
 static struct ev nl_ev;
 static struct ev rebalance_ev;
@@ -691,8 +691,8 @@ if_init(void)
 		return -1;
 	}
 
-	cache = nl_cache_mngr_add(mngr, "route/link", rtnl_change_cb);
-	if (!cache) {
+	nlcache = nl_cache_mngr_add(mngr, "route/link", rtnl_change_cb);
+	if (!nlcache) {
 		err("%s\n", nl_geterror());
 		return -1;
 	}
@@ -702,7 +702,7 @@ if_init(void)
 	ev_add(&nl_ev, EV_READ);
 	log("getting interface notifications");
 
-	nl_cache_foreach(cache, rtnl_interface_cb, NULL);
+	nl_cache_foreach(nlcache, rtnl_interface_cb, NULL);
 
 	return rebalance_init();
 }
