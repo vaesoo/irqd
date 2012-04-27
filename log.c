@@ -73,14 +73,18 @@ id_fail_va(const char *file, int line, const char *fmt, va_list ap)
 void
 id_bug(const char *file, int line)
 {
-	id_fail_va(file, line, "BUG", NULL);
+// As a NULL is not allowed for ARM va_list
+	va_list ap;
+	id_fail_va(file, line, "BUG", ap);
 	abort();
 }
 
 void
 id_oom(const char *file, int line)
 {
-	id_fail_va(file, line, "OOM", NULL);
+// As a NULL is not allowed for ARM va_list
+	va_list ap;
+	id_fail_va(file, line, "OOM", ap);
 	errno = ENOMEM;
 }
 
