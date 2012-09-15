@@ -241,7 +241,7 @@ if_add_queue(struct interface *iface, int queue, int irq)
 }
 
 /*
- * @return number of queues read, or -1 on error
+ * @return 0: ok, -1 on error
  */
 static int
 add_queues(struct interface *iface, size_t qi_len)
@@ -330,8 +330,10 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 		log("RPS is %s", rps_status == RPS_S_ENABLED ? "enabled" : "disabled");
 	}
 
-	if (add_queues(iface, QUEUE_MAX) < 0)
+	if (add_queues(iface, QUEUE_MAX) < 0) 
 		return -1;
+	log("%s: detected %d queue(s), '%s' cpuset", iface->if_name,
+		iface->if_num_queues, iface->if_cpuset->name);
 	
 	for (i = 0; i < iface->if_num_queues; i++) {
 		if (rps_status == RPS_S_ENABLED)
