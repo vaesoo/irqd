@@ -73,6 +73,8 @@ struct cpu_info {
 extern GSList *cpu_lru_list;
 extern GSList *cpu_si_load_lru_list;
 
+extern GSList *cpuset_list;
+
 int cpu_init(void);
 void cpu_fini(void);
 unsigned cpu_count(void);
@@ -85,14 +87,17 @@ int cpu_read_stat(void);
 int cpu_do_stat(void);
 void cpu_dump_map(void);
 
+struct cpuset;
+
 /* a contigous range of CPUs */
 struct cpu_bitmask {
-	size_t len;
+	struct cpuset *cpuset;
+	unsigned len;
 	int ncpus;
 	uint8_t data[];
 };
 
-struct cpu_bitmask *cpu_bitmask_new(void);
+struct cpu_bitmask *cpu_bitmask_new(struct cpuset *);
 void cpu_bitmask_free(struct cpu_bitmask *);
 int cpu_bitmask_set(struct cpu_bitmask *, unsigned) __WARN_UNUSED_RESULT;
 int cpu_bitmask_clear(struct cpu_bitmask *, unsigned) __WARN_UNUSED_RESULT;
@@ -109,5 +114,14 @@ static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *set)
 {
 	return set->ncpus;
 }
+
+struct cpuset {
+	unsigned first;
+	unsigned len;
+	char *name;
+};
+
+struct cpuset *cpuset_new(const char *, unsigned first, unsigned len);
+void cpuset_free(struct cpuset *);
 
 #endif /* CPU_H */

@@ -27,6 +27,7 @@
 #define IRQ_INFO_CHIP_NAME_LEN	32
 #define IRQ_INFO_ACTION_LEN		64
 
+
 struct irq_info {
 	unsigned ii_irq;
 	char ii_chip_name[IRQ_INFO_CHIP_NAME_LEN];
@@ -182,13 +183,30 @@ parse_irq_action(const char *tok, const char *dev, int *queue)
 	return 0;
 }
 
+static struct cpuset *
+if_get_cpuset(const struct interface *iface)
+{
+	struct cpuset *set = cpuset_list->data;
+	
+	BUG_ON(strcmp(set->name, "default"));
+	return set;
+}
+
 static struct if_queue_info *
 if_add_queue(struct interface *iface, int queue, int irq)
 {
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	if (!qi->qi_cpu_bitmask && (qi->qi_cpu_bitmask = cpu_bitmask_new()) == NULL)
-		return NULL;
+	if (!qi->qi_cpu_bitmask) {
+		struct cpuset *set = if_get_cpuset(iface);
+
+		if (!set) {
+			/* TODO device should not be handled by irqd */
+			return NULL;
+		}
+		if ((qi->qi_cpu_bitmask = cpu_bitmask_new(set)) == NULL)
+			return NULL;
+	}
 	qi->qi_num = queue;
 	qi->qi_iface = iface;
 	qi->qi_irq = irq;

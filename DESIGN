@@ -1,0 +1,20 @@
+CPUSET
+
+Each cpuset is a contiguous, non-overlapping range of CPUs.
+Not defining any cpuset creates a "default" cpuset, containing
+all CPUs, important for backward compatibility.
+
+It is possible to have CPUs not assigned to any cpuset, they
+are then unused by irqd.
+
+Each NIC may be assigned to exactly one cpuset, in case no cpuset
+is assigned irqd does not balance the NIC interrupts.
+NOTE: problematic, because the unbalanced IRQs may break proper
+balancing.  Goal is therefore to assign all NICs to some cpuset.
+
+General format for cpusets:
+
+  //  first eight CPUs for the network path
+  cpuset "network" 0 8  {
+  };
+

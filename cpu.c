@@ -31,6 +31,9 @@ GSList *cpu_si_load_lru_list;
 static unsigned num_cpus;
 struct proc_stat proc_stat, proc_stat_old;
 
+/* each CPU belongs to a single cpuset only */
+GSList *cpuset_list;
+
 static void dump_cpus(const char *, const GSList *list) __UNUSED;
 
 static gint
@@ -46,6 +49,7 @@ cpu_cmp(gconstpointer __a, gconstpointer __b)
 int
 cpu_init(void)
 {
+	struct cpuset *set;
 	int cpu;
 
 	/* TODO read sysfs instead */
@@ -59,6 +63,13 @@ cpu_init(void)
 		cpus[cpu].ci_num = cpu;
 		cpu_lru_list = g_slist_append(cpu_lru_list, &cpus[cpu]);
 	}
+
+	/* FIXME this may be problematic if some CPUs are missing */
+	if ((set = cpuset_new("default", 0, num_cpus)) == NULL) {
+		free(cpus);
+		return -1;
+	}
+	cpuset_list = g_slist_prepend(cpuset_list, set);
 
 	return 0;
 }
@@ -418,18 +429,20 @@ cpu_dump_map(void)
 }
 
 struct cpu_bitmask *
-cpu_bitmask_new(void)
+cpu_bitmask_new(struct cpuset *set)
 {
-	struct cpu_bitmask *set;
+	struct cpu_bitmask *bmask;
 
 	BUG_ON(!num_cpus);
-	set = g_malloc0(sizeof(struct cpu_bitmask) + CPUSET_SIZE(num_cpus) / 8);
-	if (set)
-		set->len = CPUSET_SIZE(num_cpus) / 8;
-	else
+	BUG_ON(!set);
+	bmask = g_malloc0(sizeof(struct cpu_bitmask) + CPUSET_SIZE(num_cpus) / 8);
+	if (bmask) {
+		bmask->cpuset = set;
+		bmask->len = CPUSET_SIZE(num_cpus) / 8;
+	} else
 		OOM();
 
-	return set;
+	return bmask;
 }
 
 void
@@ -524,4 +537,34 @@ cpu_bitmask_mask64(const struct cpu_bitmask *set)
 	memcpy(&mask, set->data, len);
 
 	return mask;
+}
+
+struct cpuset *
+cpuset_new(const char *name, unsigned first, unsigned len)
+{
+	struct cpuset *set;
+
+	BUG_ON(!num_cpus);
+	if (first >= num_cpus || first + len > num_cpus) {
+		dbg("cpuset: out of range (first %u, len %u)", first, len);
+		return NULL;
+	}
+
+	if ((set = g_malloc0(sizeof(struct cpuset))) == NULL)
+		return NULL;
+	if ((set->name = strdup(name)) == NULL) {
+		cpuset_free(set);
+		return NULL;
+	}
+	set->first = first;
+	set->len = len;
+
+	return set;
+}
+
+void
+cpuset_free(struct cpuset *set)
+{
+	if (set)
+		free(set);
 }
