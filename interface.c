@@ -473,13 +473,15 @@ parse_eth_action(const char *str, char *dev, size_t dev_len, int *queue)
 
 	BUG_ON(dev_len < IFNAMSIZ);
 	*queue = 0;
+
 	if (sscanf(str, "eth%d-TxRx-%d", &n, queue) == 2
+		|| sscanf(str, "eth%d[%d]", &n, queue) == 2
 		|| sscanf(str, "eth%d", &n) == 1) {
 		snprintf(dev, IFNAMSIZ, "eth%d", n);
-		return 0;
+		return 1;
 	}
 
-	return -1;
+	return 0;
 }
 
 static void
@@ -539,7 +541,7 @@ read_irq_stats(void)
 			char dev[IFNAMSIZ];
 			int queue;
 
-			if (parse_eth_action(tok, dev, sizeof(dev), &queue) == 0) {
+			if (parse_eth_action(tok, dev, sizeof(dev), &queue) == 1) {
 				if ((qi = if_queue_by_name(dev, queue)) != NULL)
 					queue_update_irqs(qi, &ii);
 			}
