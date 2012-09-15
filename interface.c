@@ -63,6 +63,8 @@ if_new(const char *dev)
 
 	iface = g_new0(struct interface, 1);
 	if (iface) {
+		device_init(&iface->if_dev, DEV_INTERFACE);
+
 		strncpy(iface->if_name, dev, IFNAMSIZ);
 		iface->if_queues = g_new0(struct if_queue_info, QUEUE_MAX);
 		if (!iface->if_queues) {
@@ -96,7 +98,7 @@ if_assign_cpuset(struct interface *iface, struct cpuset *set)
 	iface->if_cpuset = set;
 }
 
-static int
+static struct cpuset *
 if_assign_cpuset_by_name(struct interface *iface, const char *name)
 {
 	GSList *node;
@@ -106,11 +108,11 @@ if_assign_cpuset_by_name(struct interface *iface, const char *name)
 
 		if (!strcmp(set->name, name)) {
 			if_assign_cpuset(iface, set);
-			return 0;
+			return set;
 		}
 	}
 
-	return -1;
+	return NULL;
 }
 
 struct if_queue_info *
@@ -386,10 +388,15 @@ rtnl_balance_link(struct rtnl_link *lnk)
 		return 0;
 
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL) {
+		struct cpuset *set;
+
 		if ((iface = if_new(dev)) == NULL)
 			return -1;
 
-		if_assign_cpuset_by_name(iface, "default");
+		set = if_assign_cpuset_by_name(iface, "default");
+		BUG_ON(!set);
+		cpuset_add_device(set, if_to_dev(iface));
+
 		g_hash_table_insert(if_hash, strdup(dev), iface);
 	}
 

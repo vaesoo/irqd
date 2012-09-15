@@ -115,13 +115,17 @@ static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *bmask)
 	return bmask->ncpus;
 }
 
+struct device;
+
 struct cpuset {
 	unsigned from;
 	unsigned len;
 	char *name;
+	GSList *dev_list;
 };
 
 struct cpuset *cpuset_new(const char *, unsigned first, unsigned len);
 void cpuset_free(struct cpuset *);
+int cpuset_add_device(struct cpuset *, struct device *);
 
 #endif /* CPU_H */

@@ -1,0 +1,14 @@
+/* config for 625r2 */
+
+// cpu0 - cpu15: packet processing
+cpuset "network" 0 16 {
+	devices {
+		// management interfaces
+		interface "eth0";
+		interface "eth1";
+
+		/* 1G (singlequeue) or 10G (multiqueue) */
+		interfaces "eth2"-"eth26";
+	};
+};
+

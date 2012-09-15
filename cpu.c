@@ -551,10 +551,38 @@ cpuset_dump(void)
 
 	for (node = cpuset_list; node; node = node->next) {
 		const struct cpuset *set = node->data;
+		const GSList *dev_node;
 
 		printf("cpuset['%s']: cpus=%d-%d\n", set->name, set->from,
 			   set->from + set->len - 1);
+		for (dev_node = set->dev_list; dev_node; node = node->next) {
+			struct interface *iface = dev_to_if(node->data);
+
+			printf("  %s\n", iface->if_name); 
+		}
 	}
+}
+
+static bool
+cpuset_has_device(const struct cpuset *set, const struct device *dev)
+{
+	const GSList *node;
+
+	for (node = set->dev_list; node; node = node->next)
+		if (node->data == dev)
+			return true;
+
+	return false;
+}
+
+int
+cpuset_add_device(struct cpuset *set, struct device *dev)
+{
+	if (cpuset_has_device(set, dev))
+		return -EBUSY;
+	set->dev_list = g_slist_append(set->dev_list, dev);
+
+	return 0;
 }
 
 int

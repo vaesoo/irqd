@@ -20,6 +20,7 @@
 #include <sys/socket.h>
 #include <linux/if.h>
 
+#include "device.h"
 
 struct interface;
 struct cpu_bitmask;
@@ -38,6 +39,9 @@ struct if_queue_info {
 };
 
 struct interface {
+	/* must come first */
+	struct device if_dev;
+
 	unsigned if_flags;
 
 	struct if_queue_info *if_queues;
@@ -69,6 +73,19 @@ struct interface {
 
 	char if_name[IFNAMSIZ];
 };
+
+static inline struct device *
+if_to_dev(struct interface *iface)
+{
+	return &iface->if_dev;
+}
+
+static inline struct interface *
+dev_to_if(struct device *dev)
+{
+	BUG_ON(dev->type != DEV_INTERFACE);
+	return (struct interface *)dev;
+}
 
 static inline struct if_queue_info *
 if_queue(const struct interface *iface, int queue)
