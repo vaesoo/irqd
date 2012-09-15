@@ -2,7 +2,7 @@
 
 CLEANFILES = cfg_lex.c cfg_grammar.c cfg_grammar.h
 
-#BUILT_SOURCES = cfg_grammar.h
+BUILT_SOURCES = cfg_grammar.h
 
 AM_YFLAGS = -d
 # -d: enable debug
