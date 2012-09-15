@@ -42,6 +42,11 @@ struct interface {
 	/* must come first */
 	struct device if_dev;
 
+	enum InterfaceState {
+		IF_S_DOWN = 0,
+		IF_S_UP					/* == IFF_UP */
+	} if_state;
+
 	unsigned if_flags;
 
 	struct if_queue_info *if_queues;
@@ -74,6 +79,10 @@ struct interface {
 	char if_name[IFNAMSIZ];
 };
 
+struct interface *if_new(const char *, struct cpuset *);
+void if_free(struct interface *);
+int if_register(struct interface *);
+
 static inline struct device *
 if_to_dev(struct interface *iface)
 {
@@ -85,6 +94,18 @@ dev_to_if(struct device *dev)
 {
 	BUG_ON(dev->type != DEV_INTERFACE);
 	return (struct interface *)dev;
+}
+
+static inline void
+if_set_state(struct interface *iface, enum InterfaceState state)
+{
+	iface->if_state = state;
+}
+
+static inline int
+if_state(struct interface *iface)
+{
+	return iface->if_state;
 }
 
 static inline struct if_queue_info *
@@ -105,6 +126,7 @@ if_is_multiqueue(struct interface *iface)
 }
 
 int if_init(void);
+int if_rtnl_init(void);
 void if_fini(void);
 bool if_can_rps(const struct interface *);
 int if_set_rps_cpus(const struct interface *, int, uint64_t);

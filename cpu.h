@@ -126,6 +126,9 @@ struct cpuset {
 
 struct cpuset *cpuset_new(const char *, unsigned first, unsigned len);
 void cpuset_free(struct cpuset *);
+GSList *cpuset_get_by_name(const char *);
 int cpuset_add_device(struct cpuset *, struct device *);
+int cpuset_list_add(struct cpuset *);
+void cpuset_dump(void);
 
 #endif /* CPU_H */

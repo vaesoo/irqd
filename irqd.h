@@ -120,6 +120,7 @@ void id_oom(const char *file, int line) __COLD;
 #define dbg(fmt, args...)
 #endif /* DEBUG */
 
+extern bool config_is_read;
 extern char *irqd_prefix;
 extern bool no_daemon;
 

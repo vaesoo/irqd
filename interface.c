@@ -14,6 +14,7 @@
  *
  * Holger Eitzenberger <holger@eitzenberger.org>, Sophos, 2011.
  */
+#define DEBUG
 #include "irqd.h"
 #include "event.h"
 #include "cpu.h"
@@ -54,10 +55,11 @@ static struct ev rebalance_ev;
 static GHashTable *if_hash;
 static const struct balance_strategy *strategy = &bs_evenly;
 
-static void if_free(struct interface *iface) __UNUSED;
+static struct cpuset *if_assign_cpuset_by_name(struct interface *,
+											   const char *) __UNUSED;
 
-static struct interface *
-if_new(const char *dev)
+struct interface *
+if_new(const char *dev, struct cpuset *set)
 {
 	struct interface *iface;
 
@@ -65,12 +67,15 @@ if_new(const char *dev)
 	if (iface) {
 		device_init(&iface->if_dev, DEV_INTERFACE);
 
+		iface->if_cpuset = set;
 		strncpy(iface->if_name, dev, IFNAMSIZ);
 		iface->if_queues = g_new0(struct if_queue_info, QUEUE_MAX);
 		if (!iface->if_queues) {
 			g_free(iface);
 			iface = NULL;
 		}
+
+		dbg("new interface '%s' (%p)", dev, iface);
 	}
 
 	if (!iface)
@@ -78,17 +83,28 @@ if_new(const char *dev)
 	return iface;
 }
 
-static void
+void
 if_free(struct interface *iface)
 {
 	if (iface) {
 		int queue;
 
+		dbg("free interface %p", iface);
 		for (queue = 0; queue < iface->if_num_queues; queue++)
 			BUG_ON(!cpu_bitmask_is_empty(if_queue(iface, queue)->qi_cpu_bitmask));
 		g_free(iface->if_queues);
 		g_free(iface);
 	}
+}
+
+int
+if_register(struct interface *iface)
+{
+	BUG_ON(g_hash_table_lookup(if_hash, iface->if_name));
+	g_hash_table_insert(if_hash, strdup(iface->if_name), iface);
+	dbg("registered interface '%s'", iface->if_name);
+
+	return 0;
 }
 
 static void
@@ -209,27 +225,15 @@ parse_irq_action(const char *tok, const char *dev, int *queue)
 	return 0;
 }
 
-static struct cpuset *
-if_get_cpuset(const struct interface *iface)
-{
-	struct cpuset *set = cpuset_list->data;
-	
-	BUG_ON(strcmp(set->name, "default"));
-	return set;
-}
-
 static struct if_queue_info *
 if_add_queue(struct interface *iface, int queue, int irq)
 {
 	struct if_queue_info *qi = if_queue(iface, queue);
 
 	if (!qi->qi_cpu_bitmask) {
-		struct cpuset *set = if_get_cpuset(iface);
+		struct cpuset *set = iface->if_cpuset;
 
-		if (!set) {
-			/* TODO device should not be handled by irqd */
-			return NULL;
-		}
+		BUG_ON(!set);
 		if ((qi->qi_cpu_bitmask = cpu_bitmask_new(set)) == NULL)
 			return NULL;
 	}
@@ -327,6 +331,8 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL)
 		return 0;
 
+	if_set_state(iface, IF_S_UP);
+
 	if (rps_status == RPS_S_NEED_CHECK) {
 		rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
 		log("RPS is %s", rps_status == RPS_S_ENABLED ? "enabled" : "disabled");
@@ -356,6 +362,8 @@ rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL)
 		return 0;
 
+	if_set_state(iface, IF_S_DOWN);
+
 	if (strategy->interface_down)
 		strategy->interface_down(iface);
 
@@ -384,20 +392,27 @@ rtnl_balance_link(struct rtnl_link *lnk)
 
 	if ((dev = rtnl_link_get_name(lnk)) == NULL)
 		return 0;
-	if (strncmp(dev, "eth", 3))
+	if (strncmp(dev, "eth", 3)) {
+		log("%s: not balancing this interface", dev);
 		return 0;
+	}
 
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL) {
-		struct cpuset *set;
+		GSList *set_node;
 
-		if ((iface = if_new(dev)) == NULL)
-			return -1;
+		/* use 'default' cpuset if available, otherwise ignore */
+		set_node = cpuset_get_by_name("default");
+		if (set_node) {
+			struct cpuset *set = set_node->data;
 
-		set = if_assign_cpuset_by_name(iface, "default");
-		BUG_ON(!set);
-		cpuset_add_device(set, if_to_dev(iface));
-
-		g_hash_table_insert(if_hash, strdup(dev), iface);
+			if ((iface = if_new(dev, set)) == NULL)
+				return -1;
+			cpuset_add_device(set, if_to_dev(iface));
+			if_register(iface);
+		} else {
+			log("%s: ignored by configuration", dev);
+			return 0;
+		}
 	}
 
 	flags = rtnl_link_get_flags(lnk);
@@ -727,15 +742,21 @@ rtnl_change_cb(struct nl_cache *cache, struct nl_object *obj, int action,
 int
 if_init(void)
 {
-	int ret;
-
-	BUG_ON(!cpu_count());
 	if_hash = g_hash_table_new_full(g_str_hash, g_str_equal, free, NULL);
 	if (!if_hash) {
 		OOM();
 		return -1;
 	}
 
+	return 0;
+}
+
+int
+if_rtnl_init(void)
+{
+	int ret;
+
+	BUG_ON(!cpu_count() || !config_is_read);
 	if ((nlh = nl_socket_alloc()) == NULL) {
 		err("unable to allocate netlink handle");
 		return -1;

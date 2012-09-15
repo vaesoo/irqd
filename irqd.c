@@ -20,26 +20,35 @@
 #include "event.h"
 #include "cpu.h"
 #include "interface.h"
+#include "cfg_grammar.h"
 
 #define PID_FILE		"irqd.pid"
 
 
 /* if set allows to access files below /sys and /proc below a subdirectory */
+/* FIXME make automake aware */
+char *cfg_file = "/etc/irqdrc";
+bool config_is_read;
+
 char *irqd_prefix;
 bool no_daemon;
 int verbose;
+
+extern int yyparse();
+extern void yyset_in(FILE *);
 
 static int
 check_opts(int argc, char *argv[])
 {
 	static struct option lopts[] = {
+		{ "config", required_argument, NULL, 'c' },
 		{ "verbose", 0, NULL, 'v' },
 		{ "version", 0, NULL, 0 },
 		{ 0 }
 	};
 	int c, idx = 0;
 
-	while ((c = getopt_long(argc, argv, "dv", lopts, &idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:dv", lopts, &idx)) != -1) {
 		if (!c) {				/* long-only option */
 			switch (idx) {
 			case 1:				/* version */
@@ -52,6 +61,10 @@ check_opts(int argc, char *argv[])
 		}
 
 		switch (c) {
+		case 'c':
+			cfg_file = strdup(optarg);
+			break;
+
 		case 'd':
 			no_daemon = true;
 			break;
@@ -66,6 +79,45 @@ check_opts(int argc, char *argv[])
 	}
 
 	return 0;
+}
+
+static int
+config_read(void)
+{
+	FILE *fp;
+
+	if ((fp = fopen(cfg_file, "r")) == NULL) {
+		if (errno == ENOENT) {
+			log("no config file found");
+			return 0;
+		}
+
+		err("%s: %m", cfg_file);
+		return -1;
+	}
+
+	yyset_in(fp);
+	if (yyparse() == 1)
+		goto err;
+	else if (yyparse() == 2) {
+		OOM();
+		goto err;
+	}
+
+	fclose(fp);
+	config_is_read = true;
+
+	return 0;
+
+err:
+	fclose(fp);
+	return -1;
+}
+
+static void
+config_dump(void)
+{
+	cpuset_dump();
 }
 
 /* returned string needs to be freed by caller */
@@ -211,13 +263,24 @@ main(int argc, char *argv[])
 	}
 
 	ev_init();
-	cpu_init();
-	if_init();
 
+	cpu_init();
 	if(cpu_count() == 1) {
-		log("terminating because single CPU");
+		log("single CPU, nothing to balance");
 		exit(0);
 	}
+
+	if (optind < argc) {
+		err("extra arguments on command line");
+		exit(1);
+	}
+
+	if_init();
+
+	if (config_read() < 0)
+		exit(1);
+	if (no_daemon && verbose)
+		config_dump();
 
 	if (!no_daemon && daemon(0, 0) < 0) {
 		err("can't start daemon\n");
@@ -226,6 +289,8 @@ main(int argc, char *argv[])
 
 	if (write_pid() < 0)
 		exit(1);
+
+	if_rtnl_init();
 
 	ev_dispatch();
 

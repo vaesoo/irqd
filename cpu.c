@@ -537,17 +537,15 @@ cpuset_new(const char *name, unsigned from, unsigned len)
 void
 cpuset_free(struct cpuset *set)
 {
+	/* TODO cleanup dev_list */
 	if (set)
 		free(set);
 }
 
-static void
+void
 cpuset_dump(void)
 {
 	GSList *node;
-
-	if (!no_daemon)
-		return;
 
 	for (node = cpuset_list; node; node = node->next) {
 		const struct cpuset *set = node->data;
@@ -555,8 +553,8 @@ cpuset_dump(void)
 
 		printf("cpuset['%s']: cpus=%d-%d\n", set->name, set->from,
 			   set->from + set->len - 1);
-		for (dev_node = set->dev_list; dev_node; node = node->next) {
-			struct interface *iface = dev_to_if(node->data);
+		for (dev_node = set->dev_list; dev_node; dev_node = dev_node->next) {
+			struct interface *iface = dev_to_if(dev_node->data);
 
 			printf("  %s\n", iface->if_name); 
 		}
@@ -578,9 +576,58 @@ cpuset_has_device(const struct cpuset *set, const struct device *dev)
 int
 cpuset_add_device(struct cpuset *set, struct device *dev)
 {
+	BUG_ON(dev->type == DEV_INVAL);
 	if (cpuset_has_device(set, dev))
 		return -EBUSY;
 	set->dev_list = g_slist_append(set->dev_list, dev);
+	dbg("%s: added device %p (type %d)", __func__, dev, dev->type);
+
+	return 0;
+}
+
+GSList *
+cpuset_get_by_name(const char *name)
+{
+	GSList *node;
+
+	for (node = cpuset_list; node; node = g_slist_next(node)) {
+		struct cpuset *set = node->data;
+
+		if (!strcmp(set->name, name))
+			return node;
+	}
+
+	return NULL;
+}
+
+static bool
+in_cpuset(const struct cpuset *set, unsigned n)
+{
+	return n >= set->from && n < set->from + set->len;
+}
+
+int
+cpuset_list_add(struct cpuset *new)
+{
+	GSList *node;
+
+	if ((node = cpuset_get_by_name("default")) != NULL) {
+		struct cpuset *set = node->data;
+
+		cpuset_list = g_slist_delete_link(cpuset_list, node);
+		cpuset_free(set);
+	}
+
+	for (node = cpuset_list; node; node = g_slist_next(node)) {
+		const struct cpuset *set = node->data;
+
+		if (!strcmp(set->name, new->name))
+			return -EBUSY;
+		if (in_cpuset(set, set->from) || in_cpuset(set, set->from + set->len))
+			return -EINVAL;
+	}
+
+	cpuset_list = g_slist_append(cpuset_list, new);
 
 	return 0;
 }
@@ -609,7 +656,6 @@ cpu_init(void)
 		return -1;
 	}
 	cpuset_list = g_slist_prepend(cpuset_list, set);
-	cpuset_dump();
 
 	return 0;
 }
