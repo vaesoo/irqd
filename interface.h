@@ -17,7 +17,8 @@
 #ifndef INTERFACE_H
 #define INTERFACE_H
 
-#include <net/if.h>
+#include <sys/socket.h>
+#include <linux/if.h>
 
 
 struct interface;

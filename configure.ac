@@ -12,7 +12,7 @@ AC_SUBST([regular_CPPFLAGS])
 AC_SUBST([regular_CFLAGS])
 
 PKG_CHECK_MODULES([libglib], [glib-2.0])
-PKG_CHECK_MODULES([libnl], [libnl-3.0])
+PKG_CHECK_MODULES([libnl], [libnl-route-3.0])
 
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
