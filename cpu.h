@@ -116,7 +116,7 @@ static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *set)
 }
 
 struct cpuset {
-	unsigned first;
+	unsigned from;
 	unsigned len;
 	char *name;
 };
