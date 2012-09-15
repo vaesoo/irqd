@@ -240,25 +240,31 @@ read_proc_stat(struct proc_stat *ps)
 					 &psc->psc_idle, &psc->psc_iowait, &psc->psc_irq,
 					 &psc->psc_softirq, &psc->psc_steal, &psc->psc_guest);
 		BUG_ON(ret != 9);
-		for (cpu = 0; cpu < num_cpus; cpu++) {
-			struct cpu_info *ci = cpu_nth(cpu);
-			int cpu_tmp;
 
-			BUG_ON(!ci);
-			if ((getline(&line, &line_len, fp)) == EOF)
+		/* There could be missing cpu%d entries, e. g. in case of hotplug
+		   or just broken CPUs */
+		do {
+			struct proc_stat_cpu psc_cpu;
+			struct cpu_info *ci;
+
+			if (getline(&line, &line_len, fp) == EOF)
+				goto out;
+			if (!strncmp(line, "intr ", sizeof("intr ") - 1))
 				break;
-			psc = &ci->ci_psc;
-			ret = sscanf(line, "cpu%d %Lu %Lu %Lu %Lu %Lu %Lu %Lu %Lu %Lu",
-						 &cpu_tmp,
-						 &psc->psc_user, &psc->psc_nice, &psc->psc_system,
-						 &psc->psc_idle, &psc->psc_iowait, &psc->psc_irq,
-						 &psc->psc_softirq, &psc->psc_steal, &psc->psc_guest);
-			BUG_ON(cpu_tmp != cpu);
-			BUG_ON(ret != 10);
-		}
 
-		if (getline(&line, &line_len, fp) == EOF)
-			break;
+			ret = sscanf(line, "cpu%d %Lu %Lu %Lu %Lu %Lu %Lu %Lu %Lu %Lu",
+						 &cpu,
+						 &psc_cpu.psc_user, &psc_cpu.psc_nice,
+						 &psc_cpu.psc_system, &psc_cpu.psc_idle,
+						 &psc_cpu.psc_iowait, &psc_cpu.psc_irq,
+						 &psc_cpu.psc_softirq, &psc_cpu.psc_steal,
+						 &psc_cpu.psc_guest);
+			BUG_ON(ret != 10);
+			ci = cpu_nth(cpu);
+			BUG_ON(!ci);
+			memcpy(&ci->ci_psc, &psc_cpu, sizeof(psc_cpu));
+		} while (1);
+
 		/* ignore IRQ line for now */
 
 		if ((ret = fscanf(fp, "ctxt %Lu\n", &ps->ps_ctxt)) != 1)
@@ -280,6 +286,7 @@ read_proc_stat(struct proc_stat *ps)
 			break;
 	} while (0);
 
+out:
 	free(line);
 	fclose(fp);
 
