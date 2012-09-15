@@ -89,7 +89,7 @@ config_read(void)
 	if ((fp = fopen(cfg_file, "r")) == NULL) {
 		if (errno == ENOENT) {
 			log("no config file found");
-			return 0;
+			goto out_read;
 		}
 
 		err("%s: %m", cfg_file);
@@ -104,7 +104,9 @@ config_read(void)
 		goto err;
 	}
 
-	fclose(fp);
+out_read:
+	if (fp)
+		fclose(fp);
 	config_is_read = true;
 
 	return 0;

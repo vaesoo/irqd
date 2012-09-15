@@ -5,7 +5,7 @@ This is irqd, an alternative IRQ balancer for Linux kernels.  It
 balances the IRQs more or less evenly across the CPUs you have in your
 system.
 
-As of version 0.6.2 it requires glib-2.0 and libnl-3.0 to compile.
+As of version 0.6.2 it requires glib-2.0 and libnl-3.2 to compile.
 
 It currently relies on the Receive Packet Steering (RPS)
 implementation of newer Linux kernels, it is of less use currently if

@@ -26,7 +26,6 @@
 
 
 static struct cpu_info *cpus;
-GSList *cpu_lru_list;	/* CPUs sorted by number of users */
 GSList *cpu_si_load_lru_list;
 static unsigned num_cpus;
 struct proc_stat proc_stat, proc_stat_old;
@@ -86,10 +85,14 @@ dump_cpus(const char *prefix, const GSList *list)
 static struct cpu_info *
 add_queue(struct cpu_info *ci, struct if_queue_info *qi)
 {
+	struct cpuset *set = ci->ci_cpuset;
+
+	set->cpu_lru_list = g_slist_remove_link(set->cpu_lru_list,
+		set->cpu_lru_list);
+	set->cpu_lru_list = g_slist_insert_sorted(set->cpu_lru_list, ci, cpu_cmp);
+
 	ci->ci_queues = g_slist_append(ci->ci_queues, qi);
 	ci->ci_num_queues++;
-	cpu_lru_list = g_slist_remove_link(cpu_lru_list, cpu_lru_list);
-	cpu_lru_list = g_slist_insert_sorted(cpu_lru_list, ci, cpu_cmp);
 
 	return ci;
 }
@@ -100,14 +103,15 @@ cpu_add_queue(int cpu, struct interface *iface, int queue)
 	struct cpu_info *ci = cpu_nth(cpu);
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	BUG_ON(!ci);
 	return add_queue(ci, qi);
 }
 
+/* assign queue to CPU, select most idle CPU from a cpuset */
 struct cpu_info *
 cpu_add_queue_lru(struct interface *iface, int queue)
 {
-	struct cpu_info *ci = cpu_lru_list->data;
+	const struct cpuset *set = iface->if_cpuset;
+	struct cpu_info *ci = set->cpu_lru_list->data;
 	struct if_queue_info *qi = if_queue(iface, queue);
 
 	BUG_ON(!ci);
@@ -118,13 +122,14 @@ int
 cpu_del_queue(int cpu, struct if_queue_info *qi)
 {
 	struct cpu_info *ci = cpu_nth(cpu);
+	struct cpuset *set = ci->ci_cpuset;
 
 	BUG_ON(!ci || ci->ci_num_queues == 0);
 	ci->ci_queues = g_slist_remove(ci->ci_queues, qi);
 	ci->ci_num_queues--;
 
-	cpu_lru_list = g_slist_remove(cpu_lru_list, ci);
-	cpu_lru_list = g_slist_insert_sorted(cpu_lru_list, ci, cpu_cmp);
+	set->cpu_lru_list = g_slist_remove(set->cpu_lru_list, ci);
+	set->cpu_lru_list = g_slist_insert_sorted(set->cpu_lru_list, ci, cpu_cmp);
 
 	return -1;
 }
@@ -515,6 +520,7 @@ struct cpuset *
 cpuset_new(const char *name, unsigned from, unsigned len)
 {
 	struct cpuset *set;
+	int cpu;
 
 	BUG_ON(!num_cpus);
 	if (from >= num_cpus || from + len > num_cpus) {
@@ -530,6 +536,12 @@ cpuset_new(const char *name, unsigned from, unsigned len)
 	}
 	set->from = from;
 	set->len = len;
+
+	for (cpu = from; cpu < from + len; cpu++) {
+		set->cpu_lru_list = g_slist_append(set->cpu_lru_list, &cpus[cpu]);
+		BUG_ON(cpus[cpu].ci_cpuset);
+		cpus[cpu].ci_cpuset = set;
+	}
 
 	return set;
 }
@@ -645,10 +657,8 @@ cpu_init(void)
 		return -1;
 	}
 
-	for (cpu = 0; cpu < num_cpus; cpu++) {
+	for (cpu = 0; cpu < num_cpus; cpu++)
 		cpus[cpu].ci_num = cpu;
-		cpu_lru_list = g_slist_append(cpu_lru_list, &cpus[cpu]);
-	}
 
 	/* FIXME this may be problematic if some CPUs are missing */
 	if ((set = cpuset_new("default", 0, num_cpus)) == NULL) {

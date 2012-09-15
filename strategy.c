@@ -35,8 +35,10 @@ cpu_is_idle(const struct cpu_info *ci)
 static struct cpu_info *
 select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 {
+	const struct cpuset *set = qi->qi_iface->if_cpuset;
 	int order;
 
+	/* FIXME size of cpuset */
 	if (cpu_bitmask_ncpus(qi->qi_cpu_bitmask) >= (1 << CPU_MAX_ORDER))
 		return NULL;
 
@@ -46,7 +48,7 @@ select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 
 		for (probe = 0; probe < cpus; probe++) {
 			if (!cpu_bitmask_is_set(qi->qi_cpu_bitmask, base + probe)) {
-				struct cpu_info *new = cpu_nth(base + probe);
+				struct cpu_info *new = cpu_nth(set->from + base + probe);
 
 				if (!new)
 					return NULL;
@@ -72,6 +74,7 @@ evenly_balance_queue_rps(struct interface *iface, int queue)
 	struct cpu_info *ci;
 	uint64_t cpumask;
 
+	/* FIXME does not work for less than 4 CPUs in a cpuset */
 	if ((ci = cpu_add_queue_lru(iface, queue)) == NULL)
 		return -1;
 
@@ -118,16 +121,15 @@ static int
 queue_map_cpu(struct if_queue_info *qi)
 {
 	struct interface *iface = qi->qi_iface;
+	struct cpuset *set = iface->if_cpuset;
 	struct cpu_info *ci_new;
 	int cpu = cpu_bitmask_ffs(qi->qi_cpu_bitmask);
 	uint64_t cpumask;
 
 	BUG_ON(iface->if_num_queues > 1);
-	if (cpu_bitmask_ncpus(qi->qi_cpu_bitmask) >= (1 << CPU_MAX_ORDER))
-		return 0;
-	
 	if ((ci_new = select_nearby_cpu(qi, cpu)) == NULL) {
-		if (!cpu_lru_list || (ci_new = cpu_lru_list->data) == NULL)
+		BUG_ON(ci_new->ci_cpuset != set);
+		if (!set->cpu_lru_list || (ci_new = set->cpu_lru_list->data) == NULL)
 			return 0;
 		if (!cpu_is_idle(ci_new))
 			return 0;

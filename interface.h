@@ -34,6 +34,7 @@ struct if_queue_info {
 #define QI_F_SHARED_IRQ			0x0001
 	unsigned qi_flags;
 	struct interface *qi_iface;
+	/* the bitmask is relative to the cpuset of the interface */
 	struct cpu_bitmask *qi_cpu_bitmask;	/* both IRQ and RPS affinity */
 	irq_ctr_t qi_irqs[2][CPU_MAX];
 };

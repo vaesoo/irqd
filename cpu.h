@@ -50,12 +50,15 @@ struct proc_stat {
 };
 
 struct if_queue_info;
+struct cpuset;
 
 struct cpu_info {
 	unsigned ci_num;
 	GSList *ci_queues;
 	unsigned ci_num_queues;
 	unsigned ci_si_load;		/* softirq load (in percent) */
+
+	struct cpuset *ci_cpuset;	/* or NULL */
 
 	/* /proc/net/softnet_stat */
 	struct softnet_stat {
@@ -86,8 +89,6 @@ struct cpu_info *cpu_nth(int);
 int cpu_read_stat(void);
 int cpu_do_stat(void);
 void cpu_dump_map(void);
-
-struct cpuset;
 
 /* a contigous range of CPUs */
 struct cpu_bitmask {
@@ -121,6 +122,10 @@ struct cpuset {
 	unsigned from;
 	unsigned len;
 	char *name;
+
+	/* CPU info sorted by number of queues/IRQs assigned */
+	GSList *cpu_lru_list;
+
 	GSList *dev_list;
 };
 

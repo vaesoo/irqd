@@ -2,12 +2,13 @@
 
 * balance non-NIC IRQs
 
-* implement other strategy, which uses less CPUs
+* implement other strategy, using less CPUs
 
-* when not daemonizing log lines have two newlines
+* when not daemonizing log some lines have two newlines
 
 * use sysfs to read CPU info (road to 'CPU hotplug')
 
-* make configurable
+* automake: add libnl version check
 
 * configuration: ban some IRQs?
+
