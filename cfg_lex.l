@@ -14,6 +14,7 @@
 /* %option bison-locations */
 
 %x STRING
+%x COMMENT
 
 DIGIT	[0-9]
 ID		[a-zA-Z][a-zA-Z0-9-]+
@@ -25,12 +26,14 @@ ID		[a-zA-Z][a-zA-Z0-9-]+
 
 [ \t]+		/* empty */
 \n			/* empty */
+\/\/.*\n	/* single line comment */
 {DIGIT}+	yylval->val = atoi(yytext);  T("NUM");  return T_NUM;
 cpuset		T("CPUSET");  return T_CPUSET;
 devices		T("DEVS");  return T_DEVS;
 interface	T("IFACE");  return T_IFACE;
 {ID}		yylval->str = strdup(yytext);  T("ID");  return T_ID;
 \"			pch = str_buf;  BEGIN(STRING);
+"/*"		BEGIN(COMMENT);
 \/			T("SLASH");  return '/';
 =			T("EQ");  return '=';
 ,			T("COMMA");  return ',';
@@ -50,6 +53,10 @@ interface	T("IFACE");  return T_IFACE;
 				YY_FATAL_ERROR("string too long");
 			*pch++ = yytext[0];
 	}
+<COMMENT>{
+"*\/"	BEGIN(0);
+[^*\n]+
+}
 .			/* ignore everything else */
 
 %%
