@@ -23,6 +23,7 @@
 
 struct interface;
 struct cpu_bitmask;
+struct cpuset;
 
 typedef unsigned irq_ctr_t;
 
@@ -41,6 +42,9 @@ struct interface {
 
 	struct if_queue_info *if_queues;
 	unsigned if_num_queues;
+
+	/* the CPUs we are allowed to run on */
+	struct cpuset *if_cpuset;
 
 	/* Linux net_device_stats */
 	struct if_net_device_stats {

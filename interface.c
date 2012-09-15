@@ -89,6 +89,30 @@ if_free(struct interface *iface)
 	}
 }
 
+static void
+if_assign_cpuset(struct interface *iface, struct cpuset *set)
+{
+	BUG_ON(iface->if_cpuset);
+	iface->if_cpuset = set;
+}
+
+static int
+if_assign_cpuset_by_name(struct interface *iface, const char *name)
+{
+	GSList *node;
+
+	for (node = cpuset_list; node; node = node->next) {
+		struct cpuset *set = node->data;
+
+		if (!strcmp(set->name, name)) {
+			if_assign_cpuset(iface, set);
+			return 0;
+		}
+	}
+
+	return -1;
+}
+
 struct if_queue_info *
 if_queue_by_name(const char *dev, int queue)
 {
@@ -363,6 +387,7 @@ rtnl_balance_link(struct rtnl_link *lnk)
 		if ((iface = if_new(dev)) == NULL)
 			return -1;
 
+		if_assign_cpuset_by_name(iface, "default");
 		g_hash_table_insert(if_hash, strdup(dev), iface);
 	}
 
