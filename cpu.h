@@ -85,27 +85,27 @@ int cpu_read_stat(void);
 int cpu_do_stat(void);
 void cpu_dump_map(void);
 
-/* CPU sets */
-struct cpuset {
+/* a contigous range of CPUs */
+struct cpu_bitmask {
 	size_t len;
 	int ncpus;
 	uint8_t data[];
 };
 
-struct cpuset *cpuset_new(void);
-void cpuset_free(struct cpuset *);
-int cpuset_set(struct cpuset *, unsigned) __WARN_UNUSED_RESULT;
-int cpuset_clear(struct cpuset *, unsigned) __WARN_UNUSED_RESULT;
-bool cpuset_is_set(const struct cpuset *, unsigned);
-int cpuset_ffs(const struct cpuset *);
-uint64_t cpuset_mask64(const struct cpuset *);
+struct cpu_bitmask *cpu_bitmask_new(void);
+void cpu_bitmask_free(struct cpu_bitmask *);
+int cpu_bitmask_set(struct cpu_bitmask *, unsigned) __WARN_UNUSED_RESULT;
+int cpu_bitmask_clear(struct cpu_bitmask *, unsigned) __WARN_UNUSED_RESULT;
+bool cpu_bitmask_is_set(const struct cpu_bitmask *, unsigned);
+int cpu_bitmask_ffs(const struct cpu_bitmask *);
+uint64_t cpu_bitmask_mask64(const struct cpu_bitmask *);
 
-static inline bool cpuset_is_empty(const struct cpuset *set)
+static inline bool cpu_bitmask_is_empty(const struct cpu_bitmask *set)
 {
 	return set->ncpus == 0;
 }
 
-static inline int cpuset_ncpus(const struct cpuset *set)
+static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *set)
 {
 	return set->ncpus;
 }

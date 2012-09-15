@@ -37,7 +37,7 @@ select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 {
 	int order;
 
-	if (cpuset_ncpus(qi->qi_cpuset) >= (1 << CPU_MAX_ORDER))
+	if (cpu_bitmask_ncpus(qi->qi_cpu_bitmask) >= (1 << CPU_MAX_ORDER))
 		return NULL;
 
 	for (order = 1; order < CPU_MAX_ORDER; order++) {
@@ -45,7 +45,7 @@ select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 		int probe, base = cpu / cpus * cpus;
 
 		for (probe = 0; probe < cpus; probe++) {
-			if (!cpuset_is_set(qi->qi_cpuset, base + probe)) {
+			if (!cpu_bitmask_is_set(qi->qi_cpu_bitmask, base + probe)) {
 				struct cpu_info *new = cpu_nth(base + probe);
 
 				if (!new)
@@ -76,19 +76,19 @@ evenly_balance_queue_rps(struct interface *iface, int queue)
 		return -1;
 
 	qi = if_queue(iface, queue);
-	if (!cpuset_set(qi->qi_cpuset, ci->ci_num))
+	if (!cpu_bitmask_set(qi->qi_cpu_bitmask, ci->ci_num))
 		BUG();
 
 	if (iface->if_num_queues == 1) {
 		struct cpu_info *ci2 = select_nearby_cpu(qi, ci->ci_num);
 
 		if (ci2) {
-			if (cpuset_set(qi->qi_cpuset, ci2->ci_num))
+			if (cpu_bitmask_set(qi->qi_cpu_bitmask, ci2->ci_num))
 				cpu_add_queue(ci2->ci_num, iface, queue);
 		}
 	}
 
-	cpumask = cpuset_mask64(qi->qi_cpuset);
+	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
 	if_set_rps_cpus(iface, queue, cpumask);
 	irq_set_affinity(qi->qi_irq, cpumask);
 
@@ -119,11 +119,11 @@ queue_map_cpu(struct if_queue_info *qi)
 {
 	struct interface *iface = qi->qi_iface;
 	struct cpu_info *ci_new;
-	int cpu = cpuset_ffs(qi->qi_cpuset);
+	int cpu = cpu_bitmask_ffs(qi->qi_cpu_bitmask);
 	uint64_t cpumask;
 
 	BUG_ON(iface->if_num_queues > 1);
-	if (cpuset_ncpus(qi->qi_cpuset) >= (1 << CPU_MAX_ORDER))
+	if (cpu_bitmask_ncpus(qi->qi_cpu_bitmask) >= (1 << CPU_MAX_ORDER))
 		return 0;
 	
 	if ((ci_new = select_nearby_cpu(qi, cpu)) == NULL) {
@@ -133,10 +133,10 @@ queue_map_cpu(struct if_queue_info *qi)
 			return 0;
 	}
 
-	if (cpuset_set(qi->qi_cpuset, ci_new->ci_num))
+	if (cpu_bitmask_set(qi->qi_cpu_bitmask, ci_new->ci_num))
 		cpu_add_queue(ci_new->ci_num, iface, qi->qi_num);
 
-	cpumask = cpuset_mask64(qi->qi_cpuset);
+	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
 	if_set_rps_cpus(iface, qi->qi_num, cpumask);
 	irq_set_affinity(qi->qi_irq, cpumask);
 

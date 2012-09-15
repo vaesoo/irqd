@@ -82,7 +82,7 @@ if_free(struct interface *iface)
 		int queue;
 
 		for (queue = 0; queue < iface->if_num_queues; queue++)
-			BUG_ON(!cpuset_is_empty(if_queue(iface, queue)->qi_cpuset));
+			BUG_ON(!cpu_bitmask_is_empty(if_queue(iface, queue)->qi_cpu_bitmask));
 		g_free(iface->if_queues);
 		g_free(iface);
 	}
@@ -187,7 +187,7 @@ if_add_queue(struct interface *iface, int queue, int irq)
 {
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	if (!qi->qi_cpuset && (qi->qi_cpuset = cpuset_new()) == NULL)
+	if (!qi->qi_cpu_bitmask && (qi->qi_cpu_bitmask = cpu_bitmask_new()) == NULL)
 		return NULL;
 	qi->qi_num = queue;
 	qi->qi_iface = iface;
@@ -318,7 +318,7 @@ rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 		int cpu;
 
 		for (cpu = 0; cpu < cpu_count(); cpu++) {
-			if (cpuset_clear(qi->qi_cpuset, cpu))
+			if (cpu_bitmask_clear(qi->qi_cpu_bitmask, cpu))
 				cpu_del_queue(cpu, qi);
 		}
 	}

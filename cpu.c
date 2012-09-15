@@ -417,13 +417,13 @@ cpu_dump_map(void)
 	fclose(fp);
 }
 
-struct cpuset *
-cpuset_new(void)
+struct cpu_bitmask *
+cpu_bitmask_new(void)
 {
-	struct cpuset *set;
+	struct cpu_bitmask *set;
 
 	BUG_ON(!num_cpus);
-	set = g_malloc0(sizeof(struct cpuset) + CPUSET_SIZE(num_cpus) / 8);
+	set = g_malloc0(sizeof(struct cpu_bitmask) + CPUSET_SIZE(num_cpus) / 8);
 	if (set)
 		set->len = CPUSET_SIZE(num_cpus) / 8;
 	else
@@ -433,7 +433,7 @@ cpuset_new(void)
 }
 
 void
-cpuset_free(struct cpuset *set)
+cpu_bitmask_free(struct cpu_bitmask *set)
 {
 	g_free(set);
 }
@@ -442,7 +442,7 @@ cpuset_free(struct cpuset *set)
  * @return 1: set, 0: already set
  */
 int
-cpuset_set(struct cpuset *set, unsigned cpu)
+cpu_bitmask_set(struct cpu_bitmask *set, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
@@ -461,7 +461,7 @@ cpuset_set(struct cpuset *set, unsigned cpu)
  * @return 1: cleared, 0: already cleared
  */
 int
-cpuset_clear(struct cpuset *set, unsigned cpu)
+cpu_bitmask_clear(struct cpu_bitmask *set, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
@@ -478,7 +478,7 @@ cpuset_clear(struct cpuset *set, unsigned cpu)
 }
 
 bool
-cpuset_is_set(const struct cpuset *set, unsigned cpu)
+cpu_bitmask_is_set(const struct cpu_bitmask *set, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
@@ -487,7 +487,7 @@ cpuset_is_set(const struct cpuset *set, unsigned cpu)
 }
 
 int
-cpuset_ffs(const struct cpuset *set)
+cpu_bitmask_ffs(const struct cpu_bitmask *set)
 {
 	int off;
 
@@ -505,7 +505,7 @@ cpuset_ffs(const struct cpuset *set)
 }
 
 uint64_t
-cpuset_mask64(const struct cpuset *set)
+cpu_bitmask_mask64(const struct cpu_bitmask *set)
 {
 	uint64_t mask = 0ULL;
 	size_t len;
@@ -515,7 +515,7 @@ cpuset_mask64(const struct cpuset *set)
 		int cpu;
 
 		for (cpu = 0; cpu < set->len * 8; cpu++)
-			if (cpuset_is_set(set, cpu))
+			if (cpu_bitmask_is_set(set, cpu))
 				mask |= (1LLU << cpu);
 	}
 #endif /* 0 */
