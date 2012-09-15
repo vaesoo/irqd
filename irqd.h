@@ -124,7 +124,8 @@ extern char *irqd_prefix;
 extern bool no_daemon;
 
 int set_nonblock(int);
-char *id_path(const char *);
+char *id_path(const char *path);
+FILE *id_fopen(const char *, const char *);
 
 int irq_set_affinity(int, uint64_t);
 
