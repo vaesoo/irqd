@@ -75,13 +75,48 @@ id_path(const char *path)
 	char *buf = malloc(PATH_MAX);
 
 	BUG_ON(*path != '/');
-	if (buf) {
-		snprintf(buf, PATH_MAX, "%s%s", irqd_prefix, path);
-		buf[PATH_MAX - 1] = '\0';
-	} else
+
+	if ((buf = malloc(PATH_MAX)) == NULL) {
 		OOM();
+		return NULL;
+	}
+
+	snprintf(buf, PATH_MAX, "%s%s", irqd_prefix, path);
+	buf[PATH_MAX - 1] = '\0';
 
 	return buf;
+}
+
+/**
+ * id_fopen() - wrapper arund fopen() with debug possibilities
+ */
+FILE *
+id_fopen(const char *file, const char *mode)
+{
+	char path[2 * PATH_MAX];
+	FILE *fp;
+
+	BUG_ON(file[0] != '/');
+
+	if (irqd_prefix) {
+		struct stat st;
+
+		snprintf(path, sizeof(path), "%s%s", irqd_prefix, file);
+		path[sizeof(path) - 1] = '\0';
+
+		if (stat(path, &st) < 0) {
+			if (errno != ENOENT)
+				err("%s: %m", path);
+		} else {
+			if ((fp = fopen(path, mode)) == NULL)
+				err("%s: %m", path);
+			return fp;
+		}
+	}
+		
+	if ((fp = fopen(file, mode)) == NULL)
+		err("%s: %m", file);
+	return fp;
 }
 
 int

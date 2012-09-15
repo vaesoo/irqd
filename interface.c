@@ -200,7 +200,7 @@ static int
 add_queues(struct interface *iface, size_t qi_len)
 {
 	FILE *fp;
-	char *path = NULL, *line = NULL;
+	char *line = NULL;
 	size_t line_len;
 	int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 	int lineno = 0;
@@ -208,13 +208,8 @@ add_queues(struct interface *iface, size_t qi_len)
 	BUG_ON(rps_status == RPS_S_NEED_CHECK);
 	iface->if_num_queues = 0;
 
-	path = id_path("/proc/interrupts");
-	if ((fp = fopen(path, "r")) == NULL) {
-		err("interrupts: %m");
+	if ((fp = id_fopen("/proc/interrupts", "r")) == NULL)
 		goto err_free;
-	}
-
-	g_free(path);
 
 	getline(&line, &line_len, fp);
 	lineno++;
@@ -267,7 +262,6 @@ next_line:
 	return 0;
 
 err_free:
-	g_free(path);
 	g_free(line);
 	if (fp)
 		fclose(fp);
@@ -418,7 +412,7 @@ read_net_device_stats(void)
 	FILE *fp;
 	int ret;
 
-	if ((fp = fopen("/proc/net/dev", "r")) == NULL)
+	if ((fp = id_fopen("/proc/net/dev", "r")) == NULL)
 		BUG();
 
 	getline(&line, &line_len, fp);
@@ -511,16 +505,12 @@ queue_update_irqs(struct if_queue_info *qi, const struct irq_info *ii)
 static int
 read_irq_stats(void)
 {
-	char *path = NULL, *line = NULL;
+	char *line = NULL;
 	size_t line_len;
-	FILE *fp = NULL;
+	FILE *fp;
 
-	path = id_path("/proc/interrupts");
-	if ((fp = fopen(path, "r")) == NULL) {
-		err("interrupts: %m");
+	if ((fp = id_fopen("/proc/interrupts", "r")) == NULL)
 		goto err;
-	}
-	g_free(path);
 
 	getline(&line, &line_len, fp);
 	while (!feof(fp)) {
@@ -558,7 +548,6 @@ read_irq_stats(void)
 err:
 	if (fp)
 		fclose(fp);
-	g_free(path);
 	g_free(line);
 	return -1;
 }

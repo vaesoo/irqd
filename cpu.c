@@ -170,7 +170,7 @@ read_softnet_stat(void)
 	size_t line_len;
 	int cpu, ret;
 
-	if ((fp = fopen("/proc/net/softnet_stat", "r")) == NULL)
+	if ((fp = id_fopen("/proc/net/softnet_stat", "r")) == NULL)
 		BUG();
 
 	for (cpu = 0; cpu < num_cpus; cpu++) {
@@ -225,11 +225,8 @@ read_proc_stat(struct proc_stat *ps)
 	FILE *fp;
 	int ret;
 
-	if ((fp = fopen("/proc/stat", "r")) == NULL) {
-		err("/proc/stat: %m");
-		free(line);
+	if ((fp = id_fopen("/proc/stat", "r")) == NULL)
 		return -1;
-	}
 
 	do {
 		struct proc_stat_cpu *psc;
