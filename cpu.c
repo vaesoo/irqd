@@ -157,9 +157,9 @@ cpu_del_queue(int cpu, struct if_queue_info *qi)
 #endif /* DEBUG */
 
 #define SS_WRAP(ci, var) ({											 \
-			__SS_WRAP_CHECK(ci, var);								 \
 			if ((ci)->ci_ss[NEW].var < (ci)->ci_ss[OLD].var)		 \
 				ci->ci_ss[OLD].var = 0U;							 \
+			__SS_WRAP_CHECK(ci, var);								 \
 		})
 	
 static int
