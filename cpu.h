@@ -105,14 +105,14 @@ bool cpu_bitmask_is_set(const struct cpu_bitmask *, unsigned);
 int cpu_bitmask_ffs(const struct cpu_bitmask *);
 uint64_t cpu_bitmask_mask64(const struct cpu_bitmask *);
 
-static inline bool cpu_bitmask_is_empty(const struct cpu_bitmask *set)
+static inline bool cpu_bitmask_is_empty(const struct cpu_bitmask *bmask)
 {
-	return set->ncpus == 0;
+	return bmask->ncpus == 0;
 }
 
-static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *set)
+static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *bmask)
 {
-	return set->ncpus;
+	return bmask->ncpus;
 }
 
 struct cpuset {
