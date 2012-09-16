@@ -647,7 +647,6 @@ cpuset_list_add(struct cpuset *new)
 int
 cpu_init(void)
 {
-	struct cpuset *set;
 	int cpu;
 
 	/* TODO read sysfs instead */
@@ -659,13 +658,6 @@ cpu_init(void)
 
 	for (cpu = 0; cpu < num_cpus; cpu++)
 		cpus[cpu].ci_num = cpu;
-
-	/* FIXME this may be problematic if some CPUs are missing */
-	if ((set = cpuset_new("default", 0, num_cpus)) == NULL) {
-		free(cpus);
-		return -1;
-	}
-	cpuset_list = g_slist_prepend(cpuset_list, set);
 
 	return 0;
 }

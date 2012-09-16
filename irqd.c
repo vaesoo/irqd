@@ -84,6 +84,7 @@ check_opts(int argc, char *argv[])
 static int
 config_read(void)
 {
+	struct cpuset *set;
 	FILE *fp;
 
 	if ((fp = fopen(cfg_file, "r")) == NULL) {
@@ -102,6 +103,13 @@ config_read(void)
 	else if (yyparse() == 2) {
 		OOM();
 		goto err;
+	}
+
+	if (!cpuset_list) {
+		/* FIXME this may be problematic if some CPUs are missing */
+		if ((set = cpuset_new("default", 0, cpu_count())) == NULL)
+			return -1;
+		cpuset_list_add(set);
 	}
 
 out_read:
