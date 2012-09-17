@@ -14,7 +14,6 @@
  *
  * Holger Eitzenberger <holger@eitzenberger.org>, Sophos, 2011.
  */
-#define DEBUG
 #include "irqd.h"
 #include "cpu.h"
 #include "interface.h"
