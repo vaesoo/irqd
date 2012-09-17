@@ -30,7 +30,7 @@ typedef unsigned irq_ctr_t;
 
 struct if_queue_info {
 	unsigned qi_num;
-	unsigned qi_irq;
+	int qi_irq;
 #define QI_F_SHARED_IRQ			0x0001
 	unsigned qi_flags;
 	struct interface *qi_iface;

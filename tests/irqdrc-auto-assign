@@ -1,6 +1,8 @@
 
 /* CPU2, CPU3 */
-cpuset "network" 2 2 {
+cpuset "network" 0 2 {
+	strategy "evenly";
+
 	devices {
 		// use this cpuset for all interfaces otherwise unassigned
 		interface-auto-assign;
