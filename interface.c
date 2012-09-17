@@ -315,13 +315,9 @@ err_free:
 }
 
 static int
-rtnl_link_up(struct rtnl_link *lnk, const char *dev)
+if_on_up(struct interface *iface, const char *dev)
 {
-	struct interface *iface;
 	int i;
-
-	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL)
-		return 0;
 
 	if_set_state(iface, IF_S_UP);
 
@@ -345,14 +341,10 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 }
 
 static int
-rtnl_link_down(struct rtnl_link *lnk, const char *dev)
+if_on_down(struct interface *iface, const char *dev)
 {
-	struct interface *iface;
 	struct cpuset *set;
 	int queue;
-
-	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL)
-		return 0;
 
 	if_set_state(iface, IF_S_DOWN);
 
@@ -400,11 +392,11 @@ rtnl_balance_link(struct rtnl_link *lnk)
 
 	flags = rtnl_link_get_flags(lnk);
 	if ((iface->if_flags & IFF_UP) == 0 && (flags & IFF_UP)) {
-		if (rtnl_link_up(lnk, dev) < 0)
+		if (if_on_up(iface, dev) < 0)
 			goto err;
 		change = true;
 	} else if ((iface->if_flags & IFF_UP) && (flags & IFF_UP) == 0) {
-		if (rtnl_link_down(lnk, dev) < 0)
+		if (if_on_down(iface, dev) < 0)
 			goto err;
 		change = true;
 	}
