@@ -618,10 +618,10 @@ cpuset_get_by_name(const char *name)
 	return NULL;
 }
 
-static bool
-in_cpuset(const struct cpuset *set, unsigned n)
+bool
+cpuset_in(const struct cpuset *set, unsigned n)
 {
-	return n >= set->from && n < set->from + set->len;
+	return n >= set->from && n < set->from + cpuset_len(set);
 }
 
 int
@@ -641,7 +641,8 @@ cpuset_list_add(struct cpuset *new)
 
 		if (!strcmp(set->name, new->name))
 			return -EBUSY;
-		if (in_cpuset(set, set->from) || in_cpuset(set, set->from + set->len))
+		if (cpuset_in(set, new->from)
+			|| cpuset_in(set, cpuset_last_cpu(new)))
 			return -EINVAL;
 	}
 

@@ -1,4 +1,5 @@
 
+/* cpuset "NAME" FIRST-CPU LEN */
 cpuset "network" 0 2 {
 	devices {
 		interface "eth0";

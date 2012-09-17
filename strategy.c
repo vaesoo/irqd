@@ -32,26 +32,27 @@ cpu_is_idle(const struct cpu_info *ci)
 	return ci->ci_si_load < CPU_SI_MAP_THRESH;
 }
 
+/* maps up to four CPUs for a queue, making sure that the selected
+   CPU is in the cpuset */
 static struct cpu_info *
 select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 {
 	const struct cpuset *set = qi->qi_iface->if_cpuset;
 	int order;
 
-	/* FIXME size of cpuset */
-	if (cpu_bitmask_ncpus(qi->qi_cpu_bitmask) >= (1 << CPU_MAX_ORDER))
-		return NULL;
-
 	for (order = 1; order < CPU_MAX_ORDER; order++) {
-		unsigned cpus = 1 << order;
-		int probe, base = cpu / cpus * cpus;
+		unsigned order_ncpus = 1 << order;
+		int order_base = (cpu - set->from) / order_ncpus * order_ncpus, probe;
 
-		for (probe = 0; probe < cpus; probe++) {
-			if (!cpu_bitmask_is_set(qi->qi_cpu_bitmask, base + probe)) {
-				struct cpu_info *new = cpu_nth(set->from + base + probe);
+		for (probe = 0; probe < order_ncpus; probe++) {
+			unsigned c = set->from + order_base + probe;
+
+			if (cpuset_in(set, c)
+				&& !cpu_bitmask_is_set(qi->qi_cpu_bitmask, c)) {
+				struct cpu_info *new = cpu_nth(c);
 
 				if (!new)
-					return NULL;
+					continue;
 				if (cpu_is_idle(new))
 					return new;
 			}
@@ -74,7 +75,6 @@ evenly_balance_queue_rps(struct interface *iface, int queue)
 	struct cpu_info *ci;
 	uint64_t cpumask;
 
-	/* FIXME does not work for less than 4 CPUs in a cpuset */
 	if ((ci = cpu_add_queue_lru(iface, queue)) == NULL)
 		return -1;
 
