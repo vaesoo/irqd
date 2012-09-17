@@ -44,10 +44,11 @@ select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 
 	for (order = 1; order < CPU_MAX_ORDER; order++) {
 		unsigned order_ncpus = 1 << order;
-		int order_base = (cpu - set->from) / order_ncpus * order_ncpus, probe;
+		int order_base = (cpu - set->cs_from) / order_ncpus * order_ncpus,
+			probe;
 
 		for (probe = 0; probe < order_ncpus; probe++) {
-			unsigned c = set->from + order_base + probe;
+			unsigned c = set->cs_from + order_base + probe;
 
 			if (cpuset_in(set, c)
 				&& !cpu_bitmask_is_set(qi->qi_cpu_bitmask, c)) {
@@ -127,7 +128,8 @@ queue_map_cpu(struct if_queue_info *qi)
 	BUG_ON(iface->if_num_queues > 1);
 	if ((ci_new = select_nearby_cpu(qi, cpu)) == NULL) {
 		BUG_ON(ci_new->ci_cpuset != set);
-		if (!set->cpu_lru_list || (ci_new = set->cpu_lru_list->data) == NULL)
+		if (!set->cs_cpu_lru_list
+			|| (ci_new = set->cs_cpu_lru_list->data) == NULL)
 			return 0;
 		if (!cpu_is_idle(ci_new))
 			return 0;

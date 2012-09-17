@@ -89,9 +89,10 @@ add_queue(struct cpu_info *ci, struct if_queue_info *qi)
 {
 	struct cpuset *set = ci->ci_cpuset;
 
-	set->cpu_lru_list = g_slist_remove_link(set->cpu_lru_list,
-		set->cpu_lru_list);
-	set->cpu_lru_list = g_slist_insert_sorted(set->cpu_lru_list, ci, cpu_cmp);
+	set->cs_cpu_lru_list = g_slist_remove_link(set->cs_cpu_lru_list,
+		set->cs_cpu_lru_list);
+	set->cs_cpu_lru_list = g_slist_insert_sorted(set->cs_cpu_lru_list, ci,
+												 cpu_cmp);
 
 	ci->ci_queues = g_slist_append(ci->ci_queues, qi);
 	ci->ci_num_queues++;
@@ -113,7 +114,7 @@ struct cpu_info *
 cpu_add_queue_lru(struct interface *iface, int queue)
 {
 	const struct cpuset *set = iface->if_cpuset;
-	struct cpu_info *ci = set->cpu_lru_list->data;
+	struct cpu_info *ci = set->cs_cpu_lru_list->data;
 	struct if_queue_info *qi = if_queue(iface, queue);
 
 	BUG_ON(!ci);
@@ -130,8 +131,9 @@ cpu_del_queue(int cpu, struct if_queue_info *qi)
 	ci->ci_queues = g_slist_remove(ci->ci_queues, qi);
 	ci->ci_num_queues--;
 
-	set->cpu_lru_list = g_slist_remove(set->cpu_lru_list, ci);
-	set->cpu_lru_list = g_slist_insert_sorted(set->cpu_lru_list, ci, cpu_cmp);
+	set->cs_cpu_lru_list = g_slist_remove(set->cs_cpu_lru_list, ci);
+	set->cs_cpu_lru_list = g_slist_insert_sorted(set->cs_cpu_lru_list, ci,
+												 cpu_cmp);
 
 	return -1;
 }
@@ -439,7 +441,7 @@ cpu_bitmask_set(struct cpu_bitmask *bmask, unsigned cpu)
 	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if ((bmask->data[off] & (1 << bit)) == 0) {
 		bmask->data[off] |= (1 << bit);
@@ -460,7 +462,7 @@ cpu_bitmask_clear(struct cpu_bitmask *bmask, unsigned cpu)
 	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if (bmask->data[off] & (1 << bit)) {
 		bmask->data[off] &= ~(1 << bit);
@@ -479,7 +481,7 @@ cpu_bitmask_is_set(const struct cpu_bitmask *bmask, unsigned cpu)
 	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	return (bmask->data[off] & (1 << bit)) != 0;
 }
@@ -538,15 +540,15 @@ cpuset_new(const char *name, unsigned from, unsigned len)
 
 	if ((set = g_malloc0(sizeof(struct cpuset))) == NULL)
 		return NULL;
-	if ((set->name = strdup(name)) == NULL) {
+	if ((set->cs_name = strdup(name)) == NULL) {
 		cpuset_free(set);
 		return NULL;
 	}
-	set->from = from;
-	set->len = len;
+	set->cs_from = from;
+	set->cs_len = len;
 
 	for (cpu = from; cpu < from + len; cpu++) {
-		set->cpu_lru_list = g_slist_append(set->cpu_lru_list, &cpus[cpu]);
+		set->cs_cpu_lru_list = g_slist_append(set->cs_cpu_lru_list, &cpus[cpu]);
 		BUG_ON(cpus[cpu].ci_cpuset);
 		cpus[cpu].ci_cpuset = set;
 	}
@@ -571,9 +573,9 @@ cpuset_dump(void)
 		const struct cpuset *set = node->data;
 		const GSList *dev_node;
 
-		printf("cpuset['%s']: cpus=%d-%d\n", set->name, set->from,
-			   set->from + set->len - 1);
-		for (dev_node = set->dev_list; dev_node; dev_node = dev_node->next) {
+		printf("cpuset['%s']: cpus=%d-%d\n", set->cs_name, set->cs_from,
+			   set->cs_from + set->cs_len - 1);
+		for (dev_node = set->cs_dev_list; dev_node; dev_node = dev_node->next) {
 			struct interface *iface = dev_to_if(dev_node->data);
 
 			printf("  %s\n", iface->if_name); 
@@ -589,11 +591,11 @@ cpuset_set_auto_assign(struct cpuset *set)
 	for (node = cpuset_list; node; node = node->next) {
 		const struct cpuset *tmp = node->data;
 
-		if (tmp->flags & CS_F_AUTO_ASSIGN)
+		if (tmp->cs_flags & CS_F_AUTO_ASSIGN)
 			return -EEXIST;
 	}
 
-	set->flags |= CS_F_AUTO_ASSIGN;
+	set->cs_flags |= CS_F_AUTO_ASSIGN;
 	g_cpuset_auto_assign = set;
 	
 	return 0;
@@ -606,7 +608,7 @@ cpuset_set_strategy(struct cpuset *set, const char *name)
 
 	if (!bs)
 		return -EINVAL;
-	set->strategy = bs;
+	set->cs_strategy = bs;
 	
 	return 0;
 }
@@ -616,7 +618,7 @@ cpuset_has_device(const struct cpuset *set, const struct device *dev)
 {
 	const GSList *node;
 
-	for (node = set->dev_list; node; node = node->next)
+	for (node = set->cs_dev_list; node; node = node->next)
 		if (node->data == dev)
 			return true;
 
@@ -629,7 +631,7 @@ cpuset_add_device(struct cpuset *set, struct device *dev)
 	BUG_ON(dev->type == DEV_INVAL);
 	if (cpuset_has_device(set, dev))
 		return -EBUSY;
-	set->dev_list = g_slist_append(set->dev_list, dev);
+	set->cs_dev_list = g_slist_append(set->cs_dev_list, dev);
 	dbg("%s: added device %p (type %d)", __func__, dev, dev->type);
 
 	return 0;
@@ -643,7 +645,7 @@ cpuset_get_by_name(const char *name)
 	for (node = cpuset_list; node; node = g_slist_next(node)) {
 		struct cpuset *set = node->data;
 
-		if (!strcmp(set->name, name))
+		if (!strcmp(set->cs_name, name))
 			return node;
 	}
 
@@ -653,7 +655,7 @@ cpuset_get_by_name(const char *name)
 bool
 cpuset_in(const struct cpuset *set, unsigned n)
 {
-	return n >= set->from && n < set->from + cpuset_len(set);
+	return n >= set->cs_from && n < set->cs_from + cpuset_len(set);
 }
 
 int
@@ -671,9 +673,9 @@ cpuset_list_add(struct cpuset *new)
 	for (node = cpuset_list; node; node = g_slist_next(node)) {
 		const struct cpuset *set = node->data;
 
-		if (!strcmp(set->name, new->name))
+		if (!strcmp(set->cs_name, new->cs_name))
 			return -EBUSY;
-		if (cpuset_in(set, new->from)
+		if (cpuset_in(set, new->cs_from)
 			|| cpuset_in(set, cpuset_last_cpu(new)))
 			return -EINVAL;
 	}

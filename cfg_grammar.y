@@ -50,7 +50,7 @@ cpuset: T_CPUSET T_STR T_NUM T_NUM {
 	} '{' cpuset_blk '}' {
 		int ret;
 
-		if (!g_cpuset->strategy)
+		if (!g_cpuset->cs_strategy)
 			cpuset_set_strategy(g_cpuset, "evenly");
 		if ((ret = cpuset_list_add(g_cpuset)) < 0) {
 			yyerr_printf("%s", strerror(-ret));
@@ -82,7 +82,7 @@ iface_auto_assign: T_IFACE_AUTO_ASSIGN {
 		assert(g_cpuset != NULL);
 		if (cpuset_set_auto_assign(g_cpuset) < 0) {
 			yyerr_printf("%s: only one cpuset can have 'auto' status",
-				g_cpuset->name);
+				g_cpuset->cs_name);
 			YYERROR;
 		}
 	};

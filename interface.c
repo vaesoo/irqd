@@ -116,7 +116,7 @@ if_assign_cpuset_by_name(struct interface *iface, const char *name)
 	for (node = cpuset_list; node; node = node->next) {
 		struct cpuset *set = node->data;
 
-		if (!strcmp(set->name, name)) {
+		if (!strcmp(set->cs_name, name)) {
 			if_assign_cpuset(iface, set);
 			return set;
 		}
@@ -336,10 +336,10 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 	if (add_queues(iface, QUEUE_MAX) < 0) 
 		return -1;
 	log("%s: detected %d queue(s), '%s' cpuset", iface->if_name,
-		iface->if_num_queues, iface->if_cpuset->name);
+		iface->if_num_queues, iface->if_cpuset->cs_name);
 
 	for (i = 0; i < iface->if_num_queues; i++)
-		iface->if_cpuset->strategy->balance_queue(iface, i);
+		iface->if_cpuset->cs_strategy->balance_queue(iface, i);
 
 	return 0;
 }
@@ -357,8 +357,8 @@ rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 	if_set_state(iface, IF_S_DOWN);
 
 	set = iface->if_cpuset;
-	if (set->strategy->interface_down)
-		set->strategy->interface_down(iface);
+	if (set->cs_strategy->interface_down)
+		set->cs_strategy->interface_down(iface);
 
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);
@@ -651,8 +651,8 @@ rebalance_cb(struct ev *ev, unsigned short what)
 		   are unbalanced */
 		if (ci->ci_si_load > REBALANCE_SI_THRESH
 			|| CPU_SS_DIFF(ci, dropped) > 0) {
-			if (set && set->strategy->softirq_busy)
-				set->strategy->softirq_busy(ci);
+			if (set && set->cs_strategy->softirq_busy)
+				set->cs_strategy->softirq_busy(ci);
 		}
 	}
 

@@ -119,18 +119,18 @@ static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *bmask)
 struct device;
 
 struct cpuset {
-	unsigned from;
-	unsigned len;
+	unsigned cs_from;
+	unsigned cs_len;
 #define CS_F_AUTO_ASSIGN		0x0001
-	unsigned flags;
-	char *name;
+	unsigned cs_flags;
+	char *cs_name;
 
-	const struct balance_strategy *strategy;
+	const struct balance_strategy *cs_strategy;
 
 	/* CPU info sorted by number of queues/IRQs assigned */
-	GSList *cpu_lru_list;
+	GSList *cs_cpu_lru_list;
 
-	GSList *dev_list;
+	GSList *cs_dev_list;
 };
 
 extern struct cpuset *g_cpuset_auto_assign;
@@ -148,13 +148,13 @@ void cpuset_dump(void);
 static inline unsigned
 cpuset_len(const struct cpuset *set)
 {
-	return set->len;
+	return set->cs_len;
 }
 
 static inline unsigned
 cpuset_last_cpu(const struct cpuset *set)
 {
-	return set->from + cpuset_len(set) - 1;
+	return set->cs_from + cpuset_len(set) - 1;
 }
 
 #endif /* CPU_H */
