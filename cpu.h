@@ -94,7 +94,7 @@ void cpu_dump_map(void);
 struct cpu_bitmask {
 	struct cpuset *cpuset;
 	unsigned len;
-	int ncpus;
+	int nbits;
 	uint8_t data[];
 };
 
@@ -108,12 +108,12 @@ uint64_t cpu_bitmask_mask64(const struct cpu_bitmask *);
 
 static inline bool cpu_bitmask_is_empty(const struct cpu_bitmask *bmask)
 {
-	return bmask->ncpus == 0;
+	return bmask->nbits == 0;
 }
 
 static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *bmask)
 {
-	return bmask->ncpus;
+	return bmask->nbits;
 }
 
 struct device;

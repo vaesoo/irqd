@@ -423,23 +423,23 @@ cpu_bitmask_new(struct cpuset *set)
 }
 
 void
-cpu_bitmask_free(struct cpu_bitmask *set)
+cpu_bitmask_free(struct cpu_bitmask *bmask)
 {
-	g_free(set);
+	g_free(bmask);
 }
 
 /**
  * @return 1: set, 0: already set
  */
 int
-cpu_bitmask_set(struct cpu_bitmask *set, unsigned cpu)
+cpu_bitmask_set(struct cpu_bitmask *bmask, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(off >= set->len);
-	if ((set->data[off] & (1 << bit)) == 0) {
-		set->data[off] |= (1 << bit);
-		set->ncpus++;
+	BUG_ON(off >= bmask->len);
+	if ((bmask->data[off] & (1 << bit)) == 0) {
+		bmask->data[off] |= (1 << bit);
+		bmask->nbits++;
 
 		return 1;
 	}
@@ -451,15 +451,15 @@ cpu_bitmask_set(struct cpu_bitmask *set, unsigned cpu)
  * @return 1: cleared, 0: already cleared
  */
 int
-cpu_bitmask_clear(struct cpu_bitmask *set, unsigned cpu)
+cpu_bitmask_clear(struct cpu_bitmask *bmask, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(off >= set->len);
-	if (set->data[off] & (1 << bit)) {
-		set->data[off] &= ~(1 << bit);
-		BUG_ON(set->ncpus == 0);
-		set->ncpus--;
+	BUG_ON(off >= bmask->len);
+	if (bmask->data[off] & (1 << bit)) {
+		bmask->data[off] &= ~(1 << bit);
+		BUG_ON(bmask->nbits == 0);
+		bmask->nbits--;
 
 		return 1;
 	}
@@ -468,25 +468,25 @@ cpu_bitmask_clear(struct cpu_bitmask *set, unsigned cpu)
 }
 
 bool
-cpu_bitmask_is_set(const struct cpu_bitmask *set, unsigned cpu)
+cpu_bitmask_is_set(const struct cpu_bitmask *bmask, unsigned cpu)
 {
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(off >= set->len);
-	return (set->data[off] & (1 << bit)) != 0;
+	BUG_ON(off >= bmask->len);
+	return (bmask->data[off] & (1 << bit)) != 0;
 }
 
 int
-cpu_bitmask_ffs(const struct cpu_bitmask *set)
+cpu_bitmask_ffs(const struct cpu_bitmask *bmask)
 {
 	int off;
 
-	for (off = 0; off < set->len; off++) {
-		if (set->data[off]) {
+	for (off = 0; off < bmask->len; off++) {
+		if (bmask->data[off]) {
 			int bit;
 
 			for (bit = 0; bit < 8; bit++)
-				if (set->data[off] & (1 << bit))
+				if (bmask->data[off] & (1 << bit))
 					return off * 8 + bit;
 		}
 	}
@@ -495,7 +495,7 @@ cpu_bitmask_ffs(const struct cpu_bitmask *set)
 }
 
 uint64_t
-cpu_bitmask_mask64(const struct cpu_bitmask *set)
+cpu_bitmask_mask64(const struct cpu_bitmask *bmask)
 {
 	uint64_t mask = 0ULL;
 	size_t len;
@@ -504,14 +504,14 @@ cpu_bitmask_mask64(const struct cpu_bitmask *set)
 	{
 		int cpu;
 
-		for (cpu = 0; cpu < set->len * 8; cpu++)
-			if (cpu_bitmask_is_set(set, cpu))
+		for (cpu = 0; cpu < bmask->len * 8; cpu++)
+			if (cpu_bitmask_is_set(bmask, cpu))
 				mask |= (1LLU << cpu);
 	}
 #endif /* 0 */
 
-	len = set->len > sizeof(uint64_t) ? sizeof(uint64_t) : set->len;
-	memcpy(&mask, set->data, len);
+	len = bmask->len > sizeof(uint64_t) ? sizeof(uint64_t) : bmask->len;
+	memcpy(&mask, bmask->data, len);
 
 	return mask;
 }
