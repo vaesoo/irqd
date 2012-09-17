@@ -398,16 +398,10 @@ rtnl_balance_link(struct rtnl_link *lnk)
 	}
 
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL) {
-		GSList *set_node;
-
-		/* use 'default' cpuset if available, otherwise ignore */
-		set_node = cpuset_get_by_name("default");
-		if (set_node) {
-			struct cpuset *set = set_node->data;
-
-			if ((iface = if_new(dev, set)) == NULL)
+		if (g_cpuset_auto_assign) {
+			if ((iface = if_new(dev, g_cpuset_auto_assign)) == NULL)
 				return -1;
-			cpuset_add_device(set, if_to_dev(iface));
+			cpuset_add_device(g_cpuset_auto_assign, if_to_dev(iface));
 			if_register(iface);
 		} else {
 			log("%s: ignored by configuration", dev);

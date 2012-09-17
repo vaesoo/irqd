@@ -2,8 +2,12 @@
 /* cpuset "NAME" FIRST-CPU LEN */
 cpuset "network" 0 2 {
 	devices {
-		interface "eth0";
-		interface "eth1";
+		// assign interface manually
+		// interface "eth0";
+		// interface "eth1";
+
+		// add interfaces to this cpuset automatically
+		interface-auto-assign;
 	};
 };
 

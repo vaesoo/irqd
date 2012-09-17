@@ -106,9 +106,9 @@ config_read(void)
 	}
 
 	if (!cpuset_list) {
-		/* FIXME this may be problematic if some CPUs are missing */
 		if ((set = cpuset_new("default", 0, cpu_count())) == NULL)
 			return -1;
+		cpuset_set_auto_assign(set);
 		cpuset_list_add(set);
 	}
 

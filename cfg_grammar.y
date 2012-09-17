@@ -29,7 +29,7 @@ static struct cpuset *g_cpuset;
 
 %token<val> T_NUM
 %token<str> T_ID T_STR;
-%token T_CPUSET T_DEVS T_IFACE;
+%token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN
 %token ';' '(' ')' '{' '}' ','
 
 %% /* grammar rules and actions */
@@ -62,7 +62,7 @@ cpuset_cmds: devs;
 
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';
-devs_cmds: iface;
+devs_cmds: iface | iface_auto_assign;
 iface: T_IFACE T_STR {
 		struct interface *iface = if_new($2, g_cpuset);
 		int ret;
@@ -75,6 +75,14 @@ iface: T_IFACE T_STR {
 		}
 
 		if_register(iface);
+	};
+iface_auto_assign: T_IFACE_AUTO_ASSIGN {
+		assert(g_cpuset != NULL);
+		if (cpuset_set_auto_assign(g_cpuset) < 0) {
+			yyerr_printf("%s: only one cpuset can have 'auto' status",
+				g_cpuset->name);
+			YYERROR;
+		}
 	};
 
 %%

@@ -121,6 +121,8 @@ struct device;
 struct cpuset {
 	unsigned from;
 	unsigned len;
+#define CS_F_AUTO_ASSIGN		0x0001
+	unsigned flags;
 	char *name;
 
 	/* CPU info sorted by number of queues/IRQs assigned */
@@ -129,12 +131,15 @@ struct cpuset {
 	GSList *dev_list;
 };
 
+extern struct cpuset *g_cpuset_auto_assign;
+
 struct cpuset *cpuset_new(const char *, unsigned first, unsigned len);
 void cpuset_free(struct cpuset *);
 GSList *cpuset_get_by_name(const char *);
 int cpuset_add_device(struct cpuset *, struct device *);
 int cpuset_list_add(struct cpuset *);
 bool cpuset_in(const struct cpuset *, unsigned);
+int cpuset_set_auto_assign(struct cpuset *);
 void cpuset_dump(void);
 
 static inline unsigned

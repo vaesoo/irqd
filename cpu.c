@@ -33,6 +33,8 @@ struct proc_stat proc_stat, proc_stat_old;
 /* each CPU belongs to a single cpuset only */
 GSList *cpuset_list;
 
+struct cpuset *g_cpuset_auto_assign;
+
 static void dump_cpus(const char *, const GSList *list) __UNUSED;
 
 static gint
@@ -577,6 +579,24 @@ cpuset_dump(void)
 			printf("  %s\n", iface->if_name); 
 		}
 	}
+}
+
+int
+cpuset_set_auto_assign(struct cpuset *set)
+{
+	GSList *node;
+
+	for (node = cpuset_list; node; node = node->next) {
+		const struct cpuset *tmp = node->data;
+
+		if (tmp->flags & CS_F_AUTO_ASSIGN)
+			return -EEXIST;
+	}
+
+	set->flags |= CS_F_AUTO_ASSIGN;
+	g_cpuset_auto_assign = set;
+	
+	return 0;
 }
 
 static bool

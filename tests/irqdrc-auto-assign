@@ -1,0 +1,9 @@
+
+/* CPU2, CPU3 */
+cpuset "network" 2 2 {
+	devices {
+		// use this cpuset for all interfaces otherwise unassigned
+		interface-auto-assign;
+	};
+};
+
