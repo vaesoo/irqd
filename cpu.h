@@ -136,4 +136,16 @@ int cpuset_add_device(struct cpuset *, struct device *);
 int cpuset_list_add(struct cpuset *);
 void cpuset_dump(void);
 
+static inline unsigned
+cpuset_len(const struct cpuset *set)
+{
+	return set->len;
+}
+
+static inline unsigned
+cpuset_last_cpu(const struct cpuset *set)
+{
+	return set->from + cpuset_len(set) - 1;
+}
+
 #endif /* CPU_H */

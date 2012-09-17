@@ -434,8 +434,10 @@ cpu_bitmask_free(struct cpu_bitmask *bmask)
 int
 cpu_bitmask_set(struct cpu_bitmask *bmask, unsigned cpu)
 {
+	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
+	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if ((bmask->data[off] & (1 << bit)) == 0) {
 		bmask->data[off] |= (1 << bit);
@@ -453,8 +455,10 @@ cpu_bitmask_set(struct cpu_bitmask *bmask, unsigned cpu)
 int
 cpu_bitmask_clear(struct cpu_bitmask *bmask, unsigned cpu)
 {
+	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
+	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if (bmask->data[off] & (1 << bit)) {
 		bmask->data[off] &= ~(1 << bit);
@@ -470,8 +474,10 @@ cpu_bitmask_clear(struct cpu_bitmask *bmask, unsigned cpu)
 bool
 cpu_bitmask_is_set(const struct cpu_bitmask *bmask, unsigned cpu)
 {
+	const struct cpuset *set = bmask->cpuset;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
+	BUG_ON(cpu < set->from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	return (bmask->data[off] & (1 << bit)) != 0;
 }
