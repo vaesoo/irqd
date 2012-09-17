@@ -48,7 +48,6 @@ static struct nl_cache_mngr *mngr;
 static struct ev nl_ev;
 static struct ev rebalance_ev;
 static GHashTable *if_hash;
-static const struct balance_strategy *strategy = &bs_evenly;
 
 static struct cpuset *if_assign_cpuset_by_name(struct interface *,
 											   const char *) __UNUSED;
@@ -338,10 +337,9 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 		return -1;
 	log("%s: detected %d queue(s), '%s' cpuset", iface->if_name,
 		iface->if_num_queues, iface->if_cpuset->name);
-	
-	for (i = 0; i < iface->if_num_queues; i++) {
-		strategy->balance_queue(iface, i);
-	}
+
+	for (i = 0; i < iface->if_num_queues; i++)
+		iface->if_cpuset->strategy->balance_queue(iface, i);
 
 	return 0;
 }
@@ -350,6 +348,7 @@ static int
 rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 {
 	struct interface *iface;
+	struct cpuset *set;
 	int queue;
 
 	if ((iface = g_hash_table_lookup(if_hash, dev)) == NULL)
@@ -357,8 +356,9 @@ rtnl_link_down(struct rtnl_link *lnk, const char *dev)
 
 	if_set_state(iface, IF_S_DOWN);
 
-	if (strategy->interface_down)
-		strategy->interface_down(iface);
+	set = iface->if_cpuset;
+	if (set->strategy->interface_down)
+		set->strategy->interface_down(iface);
 
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);
@@ -639,16 +639,20 @@ rebalance_cb(struct ev *ev, unsigned short what)
 
 	for (cpu = 0; cpu < cpu_count(); cpu++) {
 		struct cpu_info *ci = cpu_nth(cpu);
+		struct cpuset *set = ci->ci_cpuset;
 
 #if 0
 		log("cpu%d: dropped:%u,%u time_squeeze:%u,%u", cpu,
 			ci->ci_ss[OLD].dropped, ci->ci_ss[NEW].dropped,
 			ci->ci_ss[OLD].time_squeeze, ci->ci_ss[NEW].time_squeeze);
 #endif /* 0 */
+
+		/* FIXME there may be CPUs not being part of a cpuset, they
+		   are unbalanced */
 		if (ci->ci_si_load > REBALANCE_SI_THRESH
 			|| CPU_SS_DIFF(ci, dropped) > 0) {
-			if (strategy->softirq_busy)
-				strategy->softirq_busy(ci);
+			if (set && set->strategy->softirq_busy)
+				set->strategy->softirq_busy(ci);
 		}
 	}
 

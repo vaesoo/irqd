@@ -29,7 +29,7 @@ static struct cpuset *g_cpuset;
 
 %token<val> T_NUM
 %token<str> T_ID T_STR;
-%token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN
+%token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN T_STRATEGY
 %token ';' '(' ')' '{' '}' ','
 
 %% /* grammar rules and actions */
@@ -50,6 +50,8 @@ cpuset: T_CPUSET T_STR T_NUM T_NUM {
 	} '{' cpuset_blk '}' {
 		int ret;
 
+		if (!g_cpuset->strategy)
+			cpuset_set_strategy(g_cpuset, "evenly");
 		if ((ret = cpuset_list_add(g_cpuset)) < 0) {
 			yyerr_printf("%s", strerror(-ret));
 			cpuset_free(g_cpuset);
@@ -58,7 +60,7 @@ cpuset: T_CPUSET T_STR T_NUM T_NUM {
 		g_cpuset = NULL;
 	};
 cpuset_blk: /* empty */ | cpuset_blk cpuset_cmds ';';
-cpuset_cmds: devs;
+cpuset_cmds: devs | strategy;
 
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';
@@ -81,6 +83,13 @@ iface_auto_assign: T_IFACE_AUTO_ASSIGN {
 		if (cpuset_set_auto_assign(g_cpuset) < 0) {
 			yyerr_printf("%s: only one cpuset can have 'auto' status",
 				g_cpuset->name);
+			YYERROR;
+		}
+	};
+strategy: T_STRATEGY T_STR {
+		g_assert(g_cpuset != NULL);
+		if (cpuset_set_strategy(g_cpuset, $2) < 0) {
+			yyerr_printf("%s: unknown strategy", $2);
 			YYERROR;
 		}
 	};

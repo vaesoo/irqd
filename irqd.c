@@ -274,6 +274,7 @@ main(int argc, char *argv[])
 	}
 
 	ev_init();
+	strategy_init();
 
 	cpu_init();
 	if(cpu_count() == 1) {

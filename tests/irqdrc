@@ -1,6 +1,11 @@
 
 /* cpuset "NAME" FIRST-CPU LEN */
 cpuset "network" 0 2 {
+	// set strategy per cpuset (default: evenly)
+	//
+	// evenly - spread IRQs evenly across CPUs
+	strategy "evenly";
+
 	devices {
 		// assign interface manually
 		// interface "eth0";

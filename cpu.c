@@ -599,6 +599,18 @@ cpuset_set_auto_assign(struct cpuset *set)
 	return 0;
 }
 
+int
+cpuset_set_strategy(struct cpuset *set, const char *name)
+{
+	const struct balance_strategy *bs = strategy_find(name);
+
+	if (!bs)
+		return -EINVAL;
+	set->strategy = bs;
+	
+	return 0;
+}
+
 static bool
 cpuset_has_device(const struct cpuset *set, const struct device *dev)
 {

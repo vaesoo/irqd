@@ -86,7 +86,8 @@ struct balance_strategy {
 	int (* interface_down)(struct interface *);
 };
 
-extern const struct balance_strategy bs_evenly;
+int strategy_init(void);
+struct balance_strategy *strategy_find(const char *);
 
 /* logging */
 int log_init(void);

@@ -125,6 +125,8 @@ struct cpuset {
 	unsigned flags;
 	char *name;
 
+	const struct balance_strategy *strategy;
+
 	/* CPU info sorted by number of queues/IRQs assigned */
 	GSList *cpu_lru_list;
 
@@ -140,6 +142,7 @@ int cpuset_add_device(struct cpuset *, struct device *);
 int cpuset_list_add(struct cpuset *);
 bool cpuset_in(const struct cpuset *, unsigned);
 int cpuset_set_auto_assign(struct cpuset *);
+int cpuset_set_strategy(struct cpuset *, const char *);
 void cpuset_dump(void);
 
 static inline unsigned
