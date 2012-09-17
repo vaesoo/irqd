@@ -62,14 +62,9 @@ select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 	return NULL;
 }
 
+/* supports both RPS and non-RPS systems */
 static int
 evenly_balance_queue(struct interface *iface, int queue)
-{
-	return 0;
-}
-
-static int
-evenly_balance_queue_rps(struct interface *iface, int queue)
 {
 	struct if_queue_info *qi;
 	struct cpu_info *ci;
@@ -82,7 +77,7 @@ evenly_balance_queue_rps(struct interface *iface, int queue)
 	if (!cpu_bitmask_set(qi->qi_cpu_bitmask, ci->ci_num))
 		BUG();
 
-	if (iface->if_num_queues == 1) {
+	if (iface->if_num_queues == 1 && g_rps_status == RPS_S_ENABLED) {
 		struct cpu_info *ci2 = select_nearby_cpu(qi, ci->ci_num);
 
 		if (ci2) {
@@ -92,7 +87,8 @@ evenly_balance_queue_rps(struct interface *iface, int queue)
 	}
 
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
-	if_set_rps_cpus(iface, queue, cpumask);
+	if (g_rps_status == RPS_S_ENABLED)
+		if_set_rps_cpus(iface, queue, cpumask);
 	irq_set_affinity(qi->qi_irq, cpumask);
 
 	log("%s:%d: rps_cpus=%#" PRIx64 " smp_affinity=%#" PRIx64,
@@ -203,7 +199,6 @@ evenly_interface_down(struct interface *iface)
 const struct balance_strategy bs_evenly = {
 	.name = "evenly",
 	.balance_queue = evenly_balance_queue,
-	.balance_queue_rps = evenly_balance_queue_rps,
 	.softirq_busy = evenly_softirq_busy,
 	.interface_down = evenly_interface_down,
 };

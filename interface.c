@@ -42,11 +42,6 @@ struct irq_info {
    a rebalance of some queues to a different CPU is scheduled */
 #define REBALANCE_SI_THRESH		70
 
-static enum RpsStatus {
-	RPS_S_NEED_CHECK = 0,
-	RPS_S_DISABLED,
-	RPS_S_ENABLED,
-} rps_status;
 static struct nl_sock *nlh;
 static struct nl_cache *nlcache;
 static struct nl_cache_mngr *mngr;
@@ -258,7 +253,7 @@ add_queues(struct interface *iface, size_t qi_len)
 	int num_cpus = sysconf(_SC_NPROCESSORS_ONLN);
 	int lineno = 0;
 
-	BUG_ON(rps_status == RPS_S_NEED_CHECK);
+	BUG_ON(g_rps_status == RPS_S_NEED_CHECK);
 	iface->if_num_queues = 0;
 
 	if ((fp = id_fopen("/proc/interrupts", "r")) == NULL)
@@ -333,9 +328,10 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 
 	if_set_state(iface, IF_S_UP);
 
-	if (rps_status == RPS_S_NEED_CHECK) {
-		rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
-		log("RPS is %s", rps_status == RPS_S_ENABLED ? "enabled" : "disabled");
+	if (g_rps_status == RPS_S_NEED_CHECK) {
+		g_rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
+		log("RPS is %s",
+			g_rps_status == RPS_S_ENABLED ? "enabled" : "disabled");
 	}
 
 	if (add_queues(iface, QUEUE_MAX) < 0) 
@@ -344,10 +340,7 @@ rtnl_link_up(struct rtnl_link *lnk, const char *dev)
 		iface->if_num_queues, iface->if_cpuset->name);
 	
 	for (i = 0; i < iface->if_num_queues; i++) {
-		if (rps_status == RPS_S_ENABLED)
-			strategy->balance_queue_rps(iface, i);
-		else
-			strategy->balance_queue(iface, i);
+		strategy->balance_queue(iface, i);
 	}
 
 	return 0;

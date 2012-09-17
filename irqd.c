@@ -33,6 +33,7 @@ bool config_is_read;
 char *irqd_prefix;
 bool no_daemon;
 int verbose;
+enum RpsStatus g_rps_status;
 
 extern int yyparse();
 extern void yyset_in(FILE *);

@@ -73,12 +73,6 @@ struct balance_strategy {
 	int (* balance_queue)(struct interface *, int);
 
 	/**
-	 * Strategy handler to balance an interface queue, called once
-	 * the interface becomes %IFF_UP.
-	 */
-	int (* balance_queue_rps)(struct interface *, int);
-
-	/**
 	 * Strategy handler to rebalance in case of a softirq becoming
 	 * too busy.
 	 */
@@ -119,6 +113,12 @@ void id_oom(const char *file, int line) __COLD;
 #else
 #define dbg(fmt, args...)
 #endif /* DEBUG */
+
+extern enum RpsStatus {
+	RPS_S_NEED_CHECK = 0,
+	RPS_S_DISABLED,
+	RPS_S_ENABLED,
+} g_rps_status;
 
 extern bool config_is_read;
 extern char *irqd_prefix;
