@@ -572,8 +572,9 @@ cpuset_dump(void)
 		const struct cpuset *set = node->data;
 		const GSList *dev_node;
 
-		printf("cpuset['%s']: cpus=%d-%d\n", set->cs_name, set->cs_from,
-			   set->cs_from + set->cs_len - 1);
+		printf("cpuset['%s']: cpus=%d-%d strategy='%s'\n",
+			   set->cs_name, set->cs_from,
+			   set->cs_from + set->cs_len - 1, set->cs_strategy->name);
 		for (dev_node = set->cs_dev_list; dev_node; dev_node = dev_node->next) {
 			struct interface *iface = dev_to_if(dev_node->data);
 
