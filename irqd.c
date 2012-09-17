@@ -106,14 +106,15 @@ config_read(void)
 		goto err;
 	}
 
+out_read:
 	if (!cpuset_list) {
 		if ((set = cpuset_new("default", 0, cpu_count())) == NULL)
 			return -1;
 		cpuset_set_auto_assign(set);
+		cpuset_set_strategy(set, "evenly");
 		cpuset_list_add(set);
 	}
 
-out_read:
 	if (fp)
 		fclose(fp);
 	config_is_read = true;
