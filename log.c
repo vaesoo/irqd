@@ -37,7 +37,8 @@ log_va(FILE *fp, char *buf, const char *file, int line, const char *prefix,
 	pch += vsnprintf(pch, end - pch, fmt, ap);
 
 	if (no_daemon) {
-		strcat(pch, "\n");
+		if (pch > buf && pch[-1] != '\n')
+			strcat(pch, "\n");
 		fputs_unlocked(buf, fp);
 		funlockfile(fp);
 	} else

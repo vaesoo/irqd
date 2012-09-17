@@ -212,7 +212,7 @@ strategy_find(const char *name)
 	GSList *node;
 
 	for (node = strategy_list; node; node = g_slist_next(node)) {
-		const struct balance_strategy *bs = node->data;
+		struct balance_strategy *bs = node->data;
 
 		if (!strcmp(bs->name, name))
 			return bs;
