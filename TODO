@@ -1,10 +1,6 @@
-* implement non-RPS balancing (requires some performance testing)
-
 * balance non-NIC IRQs
 
 * implement other strategy, using less CPUs
-
-* when not daemonizing log some lines have two newlines
 
 * use sysfs to read CPU info (road to 'CPU hotplug')
 
