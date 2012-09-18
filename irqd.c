@@ -34,6 +34,7 @@ char *irqd_prefix;
 bool no_daemon;
 int verbose;
 enum RpsStatus g_rps_status;
+enum XpsStatus g_xps_status;
 
 extern int yyparse();
 extern void yyset_in(FILE *);

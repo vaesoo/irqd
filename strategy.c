@@ -89,12 +89,12 @@ evenly_balance_queue(struct interface *iface, int queue)
 	}
 
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
-	if (g_rps_status == RPS_S_ENABLED)
-		if_set_rps_cpus(iface, queue, cpumask);
+	if (g_rps_status == RPS_S_ENABLED || g_xps_status == XPS_S_ENABLED)
+		if_set_steering_cpus(iface, queue, cpumask, cpumask);
 	if (qi->qi_irq >= 0)
 		irq_set_affinity(qi->qi_irq, cpumask);
 
-	log("%s:%d: rps_cpus=%#" PRIx64 " smp_affinity=%#" PRIx64,
+	log("%s:%d: affinity irq=%#" PRIx64 " rps/xps=%#" PRIx64,
 		iface->if_name, queue, cpumask, cpumask);
 
 	return 0;
@@ -139,7 +139,7 @@ queue_map_cpu(struct if_queue_info *qi)
 		cpu_add_queue(ci_new->ci_num, iface, qi->qi_num);
 
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
-	if_set_rps_cpus(iface, qi->qi_num, cpumask);
+	if_set_steering_cpus(iface, qi->qi_num, cpumask, cpumask);
 	if (qi->qi_irq >= 0)
 		irq_set_affinity(qi->qi_irq, cpumask);
 

@@ -129,7 +129,8 @@ int if_init(void);
 int if_rtnl_init(void);
 void if_fini(void);
 bool if_can_rps(const struct interface *);
-int if_set_rps_cpus(const struct interface *, int, uint64_t);
+bool if_can_xps(const struct interface *);
+int if_set_steering_cpus(const struct interface *, int, uint64_t, uint64_t);
 int if_get_queue_stat(struct if_queue_info *);
 
 #endif /* INTERFACE_H */

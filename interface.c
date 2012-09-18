@@ -150,6 +150,21 @@ if_can_rps(const struct interface *iface)
 	return true;
 }
 
+bool
+if_can_xps(const struct interface *iface)
+{
+	char path[PATH_MAX], *fmt;
+	struct stat st;
+
+	fmt = id_path("/sys/class/net/%s/queues/tx-0/xps_cpus");
+	snprintf(path, sizeof(path), fmt, iface->if_name);
+	g_free(fmt);
+	if (stat(path, &st) < 0)
+		return false;
+
+	return true;
+}
+
 static enum EvReturn
 rtnl_io_cb(struct ev *ev, unsigned short what)
 {
@@ -165,16 +180,14 @@ rtnl_io_cb(struct ev *ev, unsigned short what)
 	return 0;
 }
 
-int
-if_set_rps_cpus(const struct interface *iface, int queue, uint64_t mask)
+static int
+write_u64_mask(const char *file, uint64_t mask)
 {
-	char path[PATH_MAX], buf[32];
+	char buf[32];
 	int fd, len, nwritten;
 
-	snprintf(path, sizeof(path), "/sys/class/net/%s/queues/rx-%d/rps_cpus",
-			 iface->if_name, queue);
-	if ((fd = open(path, O_WRONLY | O_CLOEXEC)) < 0) {
-		err("%s/%d/rps_cpus: %m", iface->if_name, queue);
+	if ((fd = open(file, O_WRONLY | O_CLOEXEC)) < 0) {
+		err("%s: %m", file);
 		return -1;
 	}
 
@@ -183,6 +196,27 @@ if_set_rps_cpus(const struct interface *iface, int queue, uint64_t mask)
 	BUG_ON(nwritten != len);
 
 	close(fd);
+
+	return 0;
+}
+
+int
+if_set_steering_cpus(const struct interface *iface, int queue,
+					 uint64_t rps_mask, uint64_t xps_mask)
+{
+	char path[PATH_MAX];
+
+	if (g_rps_status == RPS_S_ENABLED) {
+		snprintf(path, sizeof(path), "/sys/class/net/%s/queues/rx-%d/rps_cpus",
+				 iface->if_name, queue);
+		write_u64_mask(path, rps_mask);
+	}
+
+	if (g_xps_status == XPS_S_ENABLED) {
+		snprintf(path, sizeof(path), "/sys/class/net/%s/queues/tx-%d/xps_cpus",
+				 iface->if_name, queue);
+		write_u64_mask(path, xps_mask);
+	}
 
 	return 0;
 }
@@ -323,8 +357,11 @@ if_on_up(struct interface *iface, const char *dev)
 
 	if (g_rps_status == RPS_S_NEED_CHECK) {
 		g_rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
-		log("RPS is %s",
-			g_rps_status == RPS_S_ENABLED ? "enabled" : "disabled");
+		g_xps_status = if_can_xps(iface) ? XPS_S_ENABLED : XPS_S_DISABLED;
+
+		log("RPS %s, XPS %s",
+			g_rps_status == RPS_S_ENABLED ? "enabled" : "disabled",
+			g_xps_status == XPS_S_ENABLED ? "enabled" : "disabled");
 	}
 
 	if (queues_from_interrupts(iface, QUEUE_MAX) < 0) 

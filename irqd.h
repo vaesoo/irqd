@@ -121,6 +121,12 @@ extern enum RpsStatus {
 	RPS_S_ENABLED,
 } g_rps_status;
 
+extern enum XpsStatus {
+	XPS_S_NEED_CHECK = 0,
+	XPS_S_DISABLED,
+	XPS_S_ENABLED,
+} g_xps_status;
+
 extern bool config_is_read;
 extern char *irqd_prefix;
 extern bool no_daemon;
