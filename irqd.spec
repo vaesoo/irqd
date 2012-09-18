@@ -5,7 +5,7 @@
 Name:           irqd
 License:        GPL v2 or later
 Summary:        IRQ Balancer
-Version:        0.6.1
+Version:        0.7.0
 Release:        1.%{_gitrelease}
 AutoReqProv:    on
 BuildRequires:  pkg-config libnl-devel glib2-devel
