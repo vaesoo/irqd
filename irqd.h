@@ -31,6 +31,7 @@
 #include <locale.h>
 #include <paths.h>
 #include <syslog.h>
+#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/time.h>

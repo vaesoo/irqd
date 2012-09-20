@@ -21,9 +21,12 @@
 #include "cpu.h"
 #include "interface.h"
 #include "cfg_grammar.h"
+#include <sys/signalfd.h>
 
 #define PID_FILE		"irqd.pid"
 
+
+static struct ev sig_ev;
 
 /* if set allows to access files below /sys and /proc below a subdirectory */
 /* FIXME make automake aware */
@@ -234,7 +237,6 @@ irqd_at_exit(void)
 
 	snprintf(path, sizeof(path), "%s%s", _PATH_VARRUN, PID_FILE);
 	unlink(path);
-
 	unlink("/var/lib/misc/irqd.cpumap");
 }
 
@@ -260,7 +262,6 @@ write_pid(void)
 	}
 
 	fprintf(fp, "%u\n", getpid());
-
 	fclose(fp);
 
 	atexit(irqd_at_exit);
@@ -268,9 +269,41 @@ write_pid(void)
 	return 0;
 }
 
+static enum EvReturn
+sig_ev_cb(struct ev *ev, unsigned short what)
+{
+	BUG_ON(what != EV_READ);
+
+	do {
+		struct signalfd_siginfo siginfo;
+		ssize_t nread;
+
+		if ((nread = read(ev->fd, &siginfo, sizeof(siginfo))) < 0) {
+			if (errno == EWOULDBLOCK)
+				break;
+			err("signalfd: %m");
+		}
+
+		switch (siginfo.ssi_signo) {
+		case SIGTERM:
+			log("received SIGTERM");
+			irqd_at_exit();
+			exit(0);
+
+		default:
+			BUG();
+		}
+	} while (1);
+
+	return EvOk;
+}
+
 int
 main(int argc, char *argv[])
 {
+	sigset_t ss;
+	int sig_fd;
+
 	log_init();
 
 	if (check_opts(argc, argv) < 0)
@@ -317,6 +350,14 @@ main(int argc, char *argv[])
 
 	if (write_pid() < 0)
 		exit(1);
+
+	sigemptyset(&ss);
+	sigaddset(&ss, SIGTERM);
+	sigprocmask(SIG_BLOCK, &ss, NULL);
+	sig_fd = signalfd(-1, &ss, SFD_NONBLOCK | SFD_CLOEXEC);
+	ev_set(&sig_ev, sig_fd, NULL, NULL);
+	sig_ev.cb_read = sig_ev_cb;
+	ev_add(&sig_ev, EV_READ);
 
 	if_rtnl_init();
 
