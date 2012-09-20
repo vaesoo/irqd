@@ -25,7 +25,7 @@
 
 
 static struct cpu_info *cpus;
-GSList *cpu_si_load_lru_list;
+GSList *cpu_load_lru_list;
 static unsigned num_cpus;
 struct proc_stat proc_stat, proc_stat_old;
 
@@ -307,7 +307,7 @@ cpu_read_stat(void)
 }
 
 static gint
-cpu_si_load_cmp(gconstpointer __a, gconstpointer __b)
+cpu_load_cmp(gconstpointer __a, gconstpointer __b)
 {
 	const struct cpu_info *a = __a, *b = __b;
 
@@ -340,9 +340,9 @@ do_stat_cpu(struct cpu_info *ci)
 			ci->ci_si_load = (psc->psc_softirq - psco->psc_softirq) * 100 / d;
 	}
 
-	cpu_si_load_lru_list = g_slist_remove(cpu_si_load_lru_list, ci);
-	cpu_si_load_lru_list = g_slist_insert_sorted(cpu_si_load_lru_list,
-												 ci, cpu_si_load_cmp);
+	cpu_load_lru_list = g_slist_remove(cpu_load_lru_list, ci);
+	cpu_load_lru_list = g_slist_insert_sorted(cpu_load_lru_list,
+											  ci, cpu_load_cmp);
 
 	return 0;
 }
@@ -360,17 +360,19 @@ cpu_do_stat(void)
 	}
 
 #if 0
-	{
-		char buf[128], *pch = buf, *end = buf + 128;
+	if (verbose > 1) {
+		char buf[4096], *pch = buf, *end = buf + sizeof(buf);
 		GSList *node;
 
-		for (node = cpu_si_load_lru_list; node; node = node->next) {
-			const struct cpu_info *ci = node->data;
+		for (node = cpu_load_lru_list; node; node = g_slist_next(node)) {
+			struct cpu_info *ci = node->data;
 
-			pch += snprintf(pch, end - pch, " cpu%d", ci->ci_num);
+			pch += snprintf(pch, end - pch, "cpu%d=%u/%u",
+							ci->ci_num, ci->ci_load, ci->ci_si_load);
+			if (node->next)
+				*pch++ = ' ';
 		}
-
-		log("%s", buf);
+		log("LRU: %s", buf);
 	}
 #endif /* 0 */
 
