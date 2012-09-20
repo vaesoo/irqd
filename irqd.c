@@ -230,10 +230,12 @@ xstrncpy(char *dst, const char *src, size_t n)
 static void
 irqd_at_exit(void)
 {
-	char pidfile[PATH_MAX];
+	char path[PATH_MAX];
 
-	snprintf(pidfile, sizeof(pidfile), "%s%s", _PATH_VARRUN, PID_FILE);
-	unlink(pidfile);
+	snprintf(path, sizeof(path), "%s%s", _PATH_VARRUN, PID_FILE);
+	unlink(path);
+
+	unlink("/var/lib/misc/irqd.cpumap");
 }
 
 /* write PID file unless already running */
