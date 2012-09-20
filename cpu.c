@@ -582,7 +582,7 @@ cpuset_dump(void)
 
 		printf("cpuset['%s']: cpus=%d-%d strategy='%s'\n",
 			   set->cs_name, set->cs_from,
-			   set->cs_from + set->cs_len - 1, set->cs_strategy->name);
+			   set->cs_from + set->cs_len - 1, set->cs_strategy.s_type->name);
 		for (dev_node = set->cs_dev_list; dev_node; dev_node = dev_node->next) {
 			struct interface *iface = dev_to_if(dev_node->data);
 
@@ -616,7 +616,7 @@ cpuset_set_strategy(struct cpuset *set, const char *name)
 
 	if (!type)
 		return -EINVAL;
-	set->cs_strategy = type;
+	set->cs_strategy.s_type = type;
 	
 	return 0;
 }
@@ -691,6 +691,24 @@ cpuset_list_add(struct cpuset *new)
 	cpuset_list = g_slist_append(cpuset_list, new);
 
 	return 0;
+}
+
+int
+cpuset_interface_down(struct cpuset *set, struct interface *iface)
+{
+	return set->cs_strategy.s_type->interface_down(iface);
+}
+
+int
+cpuset_softirq_busy(struct cpuset *set, struct cpu_info *ci)
+{
+	return set->cs_strategy.s_type->softirq_busy(ci);
+}
+
+int
+cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
+{
+	return set->cs_strategy.s_type->balance_queue(iface, queue);
 }
 
 int

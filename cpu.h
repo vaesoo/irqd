@@ -126,7 +126,7 @@ struct cpuset {
 	unsigned cs_flags;
 	char *cs_name;
 
-	const struct strategy_type *cs_strategy;
+	struct strategy cs_strategy;
 
 	/* CPU info sorted by number of queues/IRQs assigned */
 	GSList *cs_cpu_lru_list;
@@ -144,6 +144,9 @@ int cpuset_list_add(struct cpuset *);
 bool cpuset_in(const struct cpuset *, unsigned);
 int cpuset_set_auto_assign(struct cpuset *);
 int cpuset_set_strategy(struct cpuset *, const char *);
+int cpuset_interface_down(struct cpuset *, struct interface *);
+int cpuset_softirq_busy(struct cpuset *, struct cpu_info *);
+int cpuset_balance_queue(struct cpuset *, struct interface *, int);
 void cpuset_dump(void);
 
 static inline unsigned

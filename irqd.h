@@ -86,6 +86,10 @@ struct strategy_type {
 	int (* interface_down)(struct interface *);
 };
 
+struct strategy {
+	const struct strategy_type *s_type;
+};
+
 int strategy_init(void);
 struct strategy_type *strategy_find_type(const char *);
 

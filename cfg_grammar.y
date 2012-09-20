@@ -50,7 +50,7 @@ cpuset: T_CPUSET T_STR T_NUM T_NUM {
 	} '{' cpuset_blk '}' {
 		int ret;
 
-		if (!g_cpuset->cs_strategy)
+		if (!g_cpuset->cs_strategy.s_type)
 			cpuset_set_strategy(g_cpuset, "evenly");
 		if ((ret = cpuset_list_add(g_cpuset)) < 0) {
 			yyerr_printf("%s", strerror(-ret));

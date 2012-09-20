@@ -372,7 +372,7 @@ if_on_up(struct interface *iface, const char *dev)
 		iface->if_num_queues, iface->if_cpuset->cs_name);
 
 	for (i = 0; i < iface->if_num_queues; i++)
-		iface->if_cpuset->cs_strategy->balance_queue(iface, i);
+		cpuset_balance_queue(iface->if_cpuset, iface, i);
 
 	return 0;
 }
@@ -384,8 +384,7 @@ if_on_down(struct interface *iface, const char *dev)
 
 	if_set_state(iface, IF_S_DOWN);
 
-	if (iface->if_cpuset->cs_strategy->interface_down)
-		iface->if_cpuset->cs_strategy->interface_down(iface);
+	cpuset_interface_down(iface->if_cpuset, iface);
 
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);
@@ -673,10 +672,8 @@ rebalance_cb(struct ev *ev, unsigned short what)
 		/* FIXME there may be CPUs not being part of a cpuset, they
 		   are unbalanced */
 		if (ci->ci_si_load > REBALANCE_SI_THRESH
-			|| CPU_SS_DIFF(ci, dropped) > 0) {
-			if (set && set->cs_strategy->softirq_busy)
-				set->cs_strategy->softirq_busy(ci);
-		}
+			|| CPU_SS_DIFF(ci, dropped) > 0)
+			cpuset_softirq_busy(set, ci);
 	}
 
 	return EvOk;
