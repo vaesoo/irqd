@@ -386,6 +386,7 @@ cpu_dump_map(void)
 		g_free(line);
 		return;
 	}
+	id_set_fd_flags(fileno(fp), O_CLOEXEC);
 
 	for (cpu = 0; cpu < num_cpus; cpu++) {
 		char *pch = line, *end = line + 4096;

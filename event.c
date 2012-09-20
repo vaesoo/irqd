@@ -32,22 +32,9 @@ static int epoll_fd;
 
 
 int
-set_nonblock(int fd)
-{
-    int flags = fcntl(fd, F_GETFL, 0);
-
-    if (flags < 0 || fcntl(fd, F_SETFL, flags | O_NONBLOCK) < 0) {
-		err("fcntl: %m\n");
-        return -1;
-    }
-
-    return 0;
-}
-
-int
 ev_init(void)
 {
-	if ((epoll_fd = epoll_create(10)) < 0) {
+	if ((epoll_fd = epoll_create1(O_CLOEXEC)) < 0) {
 		err("epoll_create: %m");
 		return -1;
 	}
@@ -113,7 +100,7 @@ ev_add(struct ev *ev, unsigned short when)
 	BUG_ON(ev->fd < 0);
 	BUG_ON(when & ~EV_MASK_ALLOW);
 
-	set_nonblock(ev->fd);
+	id_set_fd_flags(ev->fd, O_NONBLOCK);
 	eev.data.ptr = ev;
 	eev.events = when | EPOLLET;
 	if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, ev->fd, &eev) < 0) {

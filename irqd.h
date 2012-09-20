@@ -131,7 +131,7 @@ extern bool config_is_read;
 extern char *irqd_prefix;
 extern bool no_daemon;
 
-int set_nonblock(int);
+int id_set_fd_flags(int, int);
 char *id_path(const char *path);
 FILE *id_fopen(const char *, const char *);
 

@@ -152,36 +152,48 @@ id_path(const char *path)
 	return buf;
 }
 
+int
+id_set_fd_flags(int fd, int new_flags)
+{
+	int flags = fcntl(fd, F_GETFD, 0);
+
+	if (flags < 0)
+		return -1;
+	return fcntl(fd, F_SETFD, flags  | new_flags);
+}
+
 /**
  * id_fopen() - wrapper arund fopen() with debug possibilities
+ *
+ * Only works for absolute paths.
  */
 FILE *
 id_fopen(const char *file, const char *mode)
 {
-	char path[2 * PATH_MAX];
 	FILE *fp;
 
 	BUG_ON(file[0] != '/');
-
 	if (irqd_prefix) {
-		struct stat st;
+		char path[2 * PATH_MAX];
 
 		snprintf(path, sizeof(path), "%s%s", irqd_prefix, file);
 		path[sizeof(path) - 1] = '\0';
-
-		if (stat(path, &st) < 0) {
+		if ((fp = fopen(path, mode)) == NULL) {
 			if (errno != ENOENT)
-				err("%s: %m", path);
-		} else {
-			if ((fp = fopen(path, mode)) == NULL)
-				err("%s: %m", path);
-			return fp;
+				goto err;
 		}
 	}
-		
-	if ((fp = fopen(file, mode)) == NULL)
-		err("%s: %m", file);
+
+	if (!fp && (fp = fopen(file, mode)) == NULL)
+		goto err;
+	/* FIXME remove race */
+	id_set_fd_flags(fileno(fp), O_CLOEXEC);
+
 	return fp;
+
+err:
+	err("%s: %m", file);
+	return NULL;
 }
 
 int
@@ -233,7 +245,7 @@ write_pid(void)
 	int fd;
 
 	snprintf(path, sizeof(path), "%s%s", _PATH_VARRUN, PID_FILE);
-	if ((fd = open(path, O_RDWR | O_CREAT, 0644)) < 0) {
+	if ((fd = open(path, O_RDWR | O_CREAT | O_CLOEXEC, 0644)) < 0) {
 		err("already running");
 		return -1;
 	}
