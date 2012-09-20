@@ -380,20 +380,20 @@ if_on_up(struct interface *iface, const char *dev)
 static int
 if_on_down(struct interface *iface, const char *dev)
 {
+	struct cpuset *set = iface->if_cpuset;
 	int queue;
 
 	if_set_state(iface, IF_S_DOWN);
 
-	cpuset_interface_down(iface->if_cpuset, iface);
+	cpuset_interface_down(set, iface);
 
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);
 		int cpu;
 
-		for (cpu = 0; cpu < cpu_count(); cpu++) {
+		for (cpu = set->cs_from; cpu <= cpuset_last_cpu(set); cpu++)
 			if (cpu_bitmask_clear(qi->qi_cpu_bitmask, cpu))
 				cpu_del_queue(cpu, qi);
-		}
 	}
 
 	cpu_dump_map();
