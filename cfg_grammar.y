@@ -30,6 +30,7 @@ static struct cpuset *g_cpuset;
 %token<val> T_NUM
 %token<str> T_ID T_STR;
 %token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN T_STRATEGY
+%token T_INIT_STEER_CPUS
 %token ';' '(' ')' '{' '}' ','
 
 %% /* grammar rules and actions */
@@ -87,11 +88,19 @@ iface_auto_assign: T_IFACE_AUTO_ASSIGN {
 		}
 	};
 strategy: T_STRATEGY T_STR {
-		g_assert(g_cpuset != NULL);
+		assert(g_cpuset != NULL);
 		if (cpuset_set_strategy(g_cpuset, $2) < 0) {
 			yyerr_printf("%s: unknown strategy", $2);
 			YYERROR;
 		}
+	} opt_strategy_blk;
+opt_strategy_blk: /* empty */ | '{' strategy_blk '}';
+strategy_blk: /* empty */ | strategy_blk strategy_cmds ';';
+strategy_cmds: init_steer_cpus;
+init_steer_cpus: T_INIT_STEER_CPUS T_NUM {
+		assert(g_cpuset != NULL);
+		/* TODO check value */
+		g_cpuset->cs_strategy.u.evenly.init_steer_cpus = $2;
 	};
 
 %%

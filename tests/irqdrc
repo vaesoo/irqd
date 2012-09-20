@@ -4,7 +4,12 @@ cpuset "network" 0 2 {
 	// set strategy per cpuset (default: evenly)
 	//
 	// evenly - spread IRQs evenly across CPUs
-	strategy "evenly";
+	strategy "evenly" {
+		// Initial number of CPUs used for packet steering (default: 2).
+		// If you specify 1 you may be better off with another strategy.
+		// valid: 1 - 4
+		initial-steering-cpus 1;
+	};
 
 	devices {
 		// assign interface manually

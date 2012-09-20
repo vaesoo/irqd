@@ -617,6 +617,7 @@ cpuset_set_strategy(struct cpuset *set, const char *name)
 	if (!type)
 		return -EINVAL;
 	set->cs_strategy.s_type = type;
+	set->cs_strategy.s_type->init(&set->cs_strategy);
 	
 	return 0;
 }

@@ -19,7 +19,8 @@
 #include "interface.h"
 
 /* up to 4 CPUs mapped per queue */
-#define CPU_MAX_ORDER	2
+#define RPS_CPU_MAX_ORDER	2
+#define RPS_CPU_MAX			(1 << RPS_CPU_MAX_ORDER)
 
 /* Softirq load threshold (percent) up to which new queues are mapped
    to a Softirq */
@@ -36,12 +37,12 @@ cpu_is_idle(const struct cpu_info *ci)
 /* maps up to four CPUs for a queue, making sure that the selected
    CPU is in the cpuset */
 static struct cpu_info *
-select_nearby_cpu(const struct if_queue_info *qi, int cpu)
+rps_select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 {
 	const struct cpuset *set = qi->qi_iface->if_cpuset;
 	int order;
 
-	for (order = 1; order < CPU_MAX_ORDER; order++) {
+	for (order = 1; order < RPS_CPU_MAX_ORDER; order++) {
 		unsigned order_ncpus = 1 << order;
 		int order_base = (cpu - set->cs_from) / order_ncpus * order_ncpus,
 			probe;
@@ -80,11 +81,16 @@ evenly_balance_queue(struct interface *iface, int queue)
 		BUG();
 
 	if (iface->if_num_queues == 1 && g_rps_status == RPS_S_ENABLED) {
-		struct cpu_info *ci2 = select_nearby_cpu(qi, ci->ci_num);
+		int ncpus = iface->if_cpuset->cs_strategy.u.evenly.init_steer_cpus;
+		int cpu;
 
-		if (ci2) {
-			if (cpu_bitmask_set(qi->qi_cpu_bitmask, ci2->ci_num))
-				cpu_add_queue(ci2->ci_num, iface, queue);
+		for (cpu = 1; cpu < ncpus; cpu++) {
+			struct cpu_info *ci2 = rps_select_nearby_cpu(qi, ci->ci_num);
+
+			if (ci2) {
+				if (cpu_bitmask_set(qi->qi_cpu_bitmask, ci2->ci_num))
+					cpu_add_queue(ci2->ci_num, iface, queue);
+			}
 		}
 	}
 
@@ -126,7 +132,7 @@ queue_map_cpu(struct if_queue_info *qi)
 	uint64_t cpumask;
 
 	BUG_ON(iface->if_num_queues > 1);
-	if ((ci_new = select_nearby_cpu(qi, cpu)) == NULL) {
+	if ((ci_new = rps_select_nearby_cpu(qi, cpu)) == NULL) {
 		BUG_ON(ci_new->ci_cpuset != set);
 		if (!set->cs_cpu_lru_list
 			|| (ci_new = set->cs_cpu_lru_list->data) == NULL)
@@ -147,6 +153,12 @@ queue_map_cpu(struct if_queue_info *qi)
 		iface->if_name, qi->qi_num, cpumask, cpumask);
 
 	return 1;
+}
+
+static void
+evenly_init(struct strategy *strategy)
+{
+	strategy->u.evenly.init_steer_cpus = 2;
 }
 
 static int
@@ -203,6 +215,7 @@ evenly_interface_down(struct interface *iface)
 
 static struct strategy_type evenly_strategy_type = {
 	.name = "evenly",
+	.init = evenly_init,
 	.balance_queue = evenly_balance_queue,
 	.cpu_busy = evenly_cpu_busy,
 	.interface_down = evenly_interface_down,

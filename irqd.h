@@ -64,8 +64,16 @@
 struct interface;
 struct cpu_info;
 
+struct evenly_args {
+	unsigned init_steer_cpus;
+};
+
+struct strategy;
+
 struct strategy_type {
 	const char *name;
+	void (* init)(struct strategy *);
+
 	/**
 	 * Strategy handler to balance an interface queue, called once
 	 * the interface becomes %IFF_UP.
@@ -86,6 +94,9 @@ struct strategy_type {
 
 struct strategy {
 	const struct strategy_type *s_type;
+	union {
+		struct evenly_args evenly;
+	} u;
 };
 
 int strategy_init(void);

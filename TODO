@@ -1,3 +1,5 @@
+* use bison %locations
+
 * balance non-NIC IRQs
 
 * implement other strategy, using less CPUs

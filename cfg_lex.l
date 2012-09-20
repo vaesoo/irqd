@@ -33,6 +33,7 @@ devices		T("DEVS");  return T_DEVS;
 interface	T("IFACE");  return T_IFACE;
 interface-auto-assign	return T_IFACE_AUTO_ASSIGN;
 strategy	T("STRATEGY");  return T_STRATEGY;
+initial-steering-cpus	return T_INIT_STEER_CPUS;
 {ID}		yylval->str = strdup(yytext);  T("ID");  return T_ID;
 \"			pch = str_buf;  BEGIN(STRING);
 "/*"		BEGIN(COMMENT);
