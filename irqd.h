@@ -73,10 +73,8 @@ struct strategy_type {
 	int (* balance_queue)(struct interface *, int);
 
 	/**
-	 * Strategy handler to rebalance in case of a softirq becoming
-	 * too busy.
-	 */
-	int (* softirq_busy)(struct cpu_info *);
+	 * Strategy handler to rebalance in case of a CPU becoming too busy. */
+	int (* cpu_busy)(struct cpu_info *);
 
 	/**
 	 * Strategy handler to eventually rebalance in case of an interface

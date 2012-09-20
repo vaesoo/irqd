@@ -150,7 +150,7 @@ queue_map_cpu(struct if_queue_info *qi)
 }
 
 static int
-evenly_softirq_busy(struct cpu_info *ci)
+evenly_cpu_busy(struct cpu_info *ci)
 {
 	struct if_queue_info *qi;
 	GList *queue_irqs_list = NULL;
@@ -204,7 +204,7 @@ evenly_interface_down(struct interface *iface)
 static struct strategy_type evenly_strategy_type = {
 	.name = "evenly",
 	.balance_queue = evenly_balance_queue,
-	.softirq_busy = evenly_softirq_busy,
+	.cpu_busy = evenly_cpu_busy,
 	.interface_down = evenly_interface_down,
 };
 

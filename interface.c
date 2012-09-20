@@ -673,7 +673,7 @@ rebalance_cb(struct ev *ev, unsigned short what)
 		   are unbalanced */
 		if (ci->ci_si_load > REBALANCE_SI_THRESH
 			|| CPU_SS_DIFF(ci, dropped) > 0)
-			cpuset_softirq_busy(set, ci);
+			cpuset_cpu_busy(set, ci);
 	}
 
 	return EvOk;

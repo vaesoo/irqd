@@ -700,9 +700,9 @@ cpuset_interface_down(struct cpuset *set, struct interface *iface)
 }
 
 int
-cpuset_softirq_busy(struct cpuset *set, struct cpu_info *ci)
+cpuset_cpu_busy(struct cpuset *set, struct cpu_info *ci)
 {
-	return set->cs_strategy.s_type->softirq_busy(ci);
+	return set->cs_strategy.s_type->cpu_busy(ci);
 }
 
 int

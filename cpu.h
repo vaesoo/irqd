@@ -145,7 +145,7 @@ bool cpuset_in(const struct cpuset *, unsigned);
 int cpuset_set_auto_assign(struct cpuset *);
 int cpuset_set_strategy(struct cpuset *, const char *);
 int cpuset_interface_down(struct cpuset *, struct interface *);
-int cpuset_softirq_busy(struct cpuset *, struct cpu_info *);
+int cpuset_cpu_busy(struct cpuset *, struct cpu_info *);
 int cpuset_balance_queue(struct cpuset *, struct interface *, int);
 void cpuset_dump(void);
 
