@@ -64,7 +64,7 @@
 struct interface;
 struct cpu_info;
 
-struct balance_strategy {
+struct strategy_type {
 	const char *name;
 	/**
 	 * Strategy handler to balance an interface queue, called once
@@ -87,7 +87,7 @@ struct balance_strategy {
 };
 
 int strategy_init(void);
-struct balance_strategy *strategy_find(const char *);
+struct strategy_type *strategy_find_type(const char *);
 
 /* logging */
 int log_init(void);

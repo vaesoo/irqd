@@ -612,11 +612,11 @@ cpuset_set_auto_assign(struct cpuset *set)
 int
 cpuset_set_strategy(struct cpuset *set, const char *name)
 {
-	const struct balance_strategy *bs = strategy_find(name);
+	const struct strategy_type *type = strategy_find_type(name);
 
-	if (!bs)
+	if (!type)
 		return -EINVAL;
-	set->cs_strategy = bs;
+	set->cs_strategy = type;
 	
 	return 0;
 }

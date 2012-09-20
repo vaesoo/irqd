@@ -380,14 +380,12 @@ if_on_up(struct interface *iface, const char *dev)
 static int
 if_on_down(struct interface *iface, const char *dev)
 {
-	struct cpuset *set;
 	int queue;
 
 	if_set_state(iface, IF_S_DOWN);
 
-	set = iface->if_cpuset;
-	if (set->cs_strategy->interface_down)
-		set->cs_strategy->interface_down(iface);
+	if (iface->if_cpuset->cs_strategy->interface_down)
+		iface->if_cpuset->cs_strategy->interface_down(iface);
 
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);

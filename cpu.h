@@ -126,7 +126,7 @@ struct cpuset {
 	unsigned cs_flags;
 	char *cs_name;
 
-	const struct balance_strategy *cs_strategy;
+	const struct strategy_type *cs_strategy;
 
 	/* CPU info sorted by number of queues/IRQs assigned */
 	GSList *cs_cpu_lru_list;

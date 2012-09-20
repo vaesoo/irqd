@@ -25,7 +25,7 @@
    to a Softirq */
 #define CPU_SI_MAP_THRESH		50
 
-GSList *strategy_list;
+GSList *strategy_type_list;
 
 static bool
 cpu_is_idle(const struct cpu_info *ci)
@@ -201,7 +201,7 @@ evenly_interface_down(struct interface *iface)
 	return 0;
 }
 
-static struct balance_strategy bs_evenly = {
+static struct strategy_type evenly_strategy_type = {
 	.name = "evenly",
 	.balance_queue = evenly_balance_queue,
 	.softirq_busy = evenly_softirq_busy,
@@ -209,16 +209,16 @@ static struct balance_strategy bs_evenly = {
 };
 
 
-struct balance_strategy *
-strategy_find(const char *name)
+struct strategy_type *
+strategy_find_type(const char *name)
 {
 	GSList *node;
 
-	for (node = strategy_list; node; node = g_slist_next(node)) {
-		struct balance_strategy *bs = node->data;
+	for (node = strategy_type_list; node; node = g_slist_next(node)) {
+		struct strategy_type *type = node->data;
 
-		if (!strcmp(bs->name, name))
-			return bs;
+		if (!strcmp(type->name, name))
+			return type;
 	}
 
 	return NULL;
@@ -227,7 +227,8 @@ strategy_find(const char *name)
 int
 strategy_init(void)
 {
-	strategy_list = g_slist_append(strategy_list, &bs_evenly);
+	strategy_type_list = g_slist_append(strategy_type_list,
+										&evenly_strategy_type);
 
 	return 0;
 }
