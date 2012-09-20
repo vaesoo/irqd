@@ -353,8 +353,6 @@ if_on_up(struct interface *iface, const char *dev)
 {
 	int i;
 
-	if_set_state(iface, IF_S_UP);
-
 	if (g_rps_status == RPS_S_NEED_CHECK) {
 		g_rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
 		g_xps_status = if_can_xps(iface) ? XPS_S_ENABLED : XPS_S_DISABLED;
@@ -374,6 +372,9 @@ if_on_up(struct interface *iface, const char *dev)
 	for (i = 0; i < iface->if_num_queues; i++)
 		cpuset_balance_queue(iface->if_cpuset, iface, i);
 
+	if_set_state(iface, IF_S_UP);
+	log("%s: up", iface->if_name);
+
 	return 0;
 }
 
@@ -382,8 +383,6 @@ if_on_down(struct interface *iface, const char *dev)
 {
 	struct cpuset *set = iface->if_cpuset;
 	int queue;
-
-	if_set_state(iface, IF_S_DOWN);
 
 	cpuset_interface_down(set, iface);
 
@@ -395,6 +394,9 @@ if_on_down(struct interface *iface, const char *dev)
 			if (cpu_bitmask_clear(qi->qi_cpu_bitmask, cpu))
 				cpu_del_queue(cpu, qi);
 	}
+
+	if_set_state(iface, IF_S_DOWN);
+	log("%s: down", iface->if_name);
 
 	cpu_dump_map();
 
