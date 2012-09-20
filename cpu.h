@@ -56,6 +56,7 @@ struct cpu_info {
 	unsigned ci_num;
 	GSList *ci_queues;
 	unsigned ci_num_queues;
+	unsigned ci_load;			/* in percent */
 	unsigned ci_si_load;		/* softirq load (in percent) */
 
 	struct cpuset *ci_cpuset;	/* or NULL */

@@ -321,19 +321,24 @@ do_stat_cpu(struct cpu_info *ci)
 {
 	const struct proc_stat_cpu *psc = &ci->ci_psc;
 	const struct proc_stat_cpu *psco = &ci->ci_psc_old;
-	unsigned long long frm_tot, frm_tot_old, frm_si;
+	unsigned long long frm_busy, frm_busy_old, frm_tot, frm_tot_old;
 
-	frm_si = psc->psc_softirq - psco->psc_softirq;
-	frm_tot = psc->psc_user + psc->psc_nice + psc->psc_system
-		+ psc->psc_idle + psc->psc_iowait + psc->psc_irq
-		+ psc->psc_softirq + psc->psc_steal + psc->psc_guest;
-	frm_tot_old = psco->psc_user + psco->psc_nice + psco->psc_system
-		+ psco->psc_idle + psco->psc_iowait + psco->psc_irq
-		+ psco->psc_softirq + psco->psc_steal + psco->psc_guest;
-	if (frm_tot > frm_tot_old)
-		ci->ci_si_load = (frm_si * 100 / (frm_tot - frm_tot_old));
-	else
-		ci->ci_si_load = 0U;
+	frm_busy = psc->psc_user + psc->psc_nice + psc->psc_system
+		+ psc->psc_iowait + psc->psc_irq + psc->psc_softirq
+		+ psc->psc_steal + psc->psc_guest;
+	frm_tot = frm_busy + psc->psc_idle;
+	frm_busy_old = psco->psc_user + psco->psc_nice + psco->psc_system
+		+ psco->psc_iowait + psco->psc_irq + psco->psc_softirq
+		+ psco->psc_steal + psco->psc_guest;
+	frm_tot_old = frm_busy_old + psco->psc_idle;
+	if (frm_tot > frm_tot_old) {
+		unsigned d = frm_tot - frm_tot_old;
+
+		if (frm_busy > frm_busy_old)
+			ci->ci_load = (frm_busy - frm_busy_old) * 100 / d;
+		if (psc->psc_softirq > psco->psc_softirq)
+			ci->ci_si_load = (psc->psc_softirq - psco->psc_softirq) * 100 / d;
+	}
 
 	cpu_si_load_lru_list = g_slist_remove(cpu_si_load_lru_list, ci);
 	cpu_si_load_lru_list = g_slist_insert_sorted(cpu_si_load_lru_list,
