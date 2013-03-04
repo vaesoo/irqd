@@ -225,8 +225,10 @@ read_proc_stat(struct proc_stat *ps)
 	FILE *fp;
 	int ret;
 
-	if ((fp = id_fopen("/proc/stat", "r")) == NULL)
+	if ((fp = id_fopen("/proc/stat", "r")) == NULL) {
+		free(line);
 		return -1;
+	}
 
 	do {
 		struct proc_stat_cpu *psc;
