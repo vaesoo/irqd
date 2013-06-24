@@ -22,6 +22,10 @@ GSList *strategy_type_list;
 
 extern struct strategy_type evenly_strategy_type;
 
+struct strategy_type static_strategy_type = {
+	.name = "static",
+};
+
 struct strategy_type *
 strategy_find_type(const char *name)
 {
@@ -40,6 +44,8 @@ strategy_find_type(const char *name)
 int
 strategy_init(void)
 {
+	strategy_type_list = g_slist_append(strategy_type_list,
+										&static_strategy_type);
 	strategy_type_list = g_slist_append(strategy_type_list,
 										&evenly_strategy_type);
 
