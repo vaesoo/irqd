@@ -386,7 +386,7 @@ cpu_do_stat(void)
 void
 cpu_dump_map(void)
 {
-	char path[PATH_MAX], *line = g_malloc(4096);
+	char path[PATH_MAX];
 	FILE *fp;
 	int cpu;
 
@@ -394,29 +394,32 @@ cpu_dump_map(void)
 	   which doesn't exist, */
 	snprintf(path, sizeof(path), "/var/lib/misc/%s", CPU_MAP_FILE);
 	if ((fp = fopen(path, "w")) == NULL) {
-		g_free(line);
+		err("%s: %m", CPU_MAP_FILE);
 		return;
 	}
 
 	for (cpu = 0; cpu < num_cpus; cpu++) {
-		char *pch = line, *end = line + 4096;
 		GSList *node;
 
 		if (!cpus[cpu].ci_queues)
 			continue;
-		pch += snprintf(pch, end - pch, "cpu%d:", cpu);
-		for (node = cpus[cpu].ci_queues; node; node = node->next) {
-			struct if_queue_info *qi = node->data;
+		if (fprintf(fp, "cpu%d:", cpu) == EOF)
+			goto out;
 
-			pch += snprintf(pch, end - pch, " %s:%d", qi->qi_iface->if_name,
-				qi->qi_num);
+		for (node = cpus[cpu].ci_queues; node; node = node->next) {
+			const struct if_queue_info *qi = node->data;
+
+			if (fprintf(fp, " %s:%d", qi->qi_iface->if_name, qi->qi_num) == EOF)
+				goto out;
 		}
 
-		fprintf(fp, "%s\n", line);
+		if (fputc('\n', fp) == EOF)
+			goto out;
 	}
 
-	g_free(line);
-	fclose(fp);
+out:
+	if (fclose(fp) == EOF)
+		err("%s: %m", CPU_MAP_FILE);
 }
 
 struct cpuset *
