@@ -620,7 +620,8 @@ cpuset_set_strategy(struct cpuset *set, const char *name)
 	if (!type)
 		return -EINVAL;
 	set->cs_strategy.s_type = type;
-	set->cs_strategy.s_type->init(&set->cs_strategy);
+	if (set->cs_strategy.s_type->init != NULL)
+		set->cs_strategy.s_type->init(&set->cs_strategy);
 	
 	return 0;
 }
@@ -700,19 +701,28 @@ cpuset_list_add(struct cpuset *new)
 int
 cpuset_interface_down(struct cpuset *set, struct interface *iface)
 {
-	return set->cs_strategy.s_type->interface_down(iface);
+	if (set->cs_strategy.s_type->interface_down)
+		return set->cs_strategy.s_type->interface_down(iface);
+
+	return 0;
 }
 
 int
 cpuset_cpu_busy(struct cpuset *set, struct cpu_info *ci)
 {
-	return set->cs_strategy.s_type->cpu_busy(ci);
+	if (set->cs_strategy.s_type->cpu_busy)
+		return set->cs_strategy.s_type->cpu_busy(ci);
+
+	return 0;
 }
 
 int
 cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
 {
-	return set->cs_strategy.s_type->balance_queue(iface, queue);
+	if (set->cs_strategy.s_type->balance_queue)
+		return set->cs_strategy.s_type->balance_queue(iface, queue);
+
+	return 0;
 }
 
 int

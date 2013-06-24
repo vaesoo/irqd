@@ -13,6 +13,6 @@ AM_CFLAGS  = ${regular_CFLAGS} ${libglib_CFLAGS} ${libnl_CFLAGS} \
 
 sbin_PROGRAMS = irqd
 
-irqd_SOURCES = irqd.c strategy.c interface.c cpu.c event.c log.c \
-	cfg_grammar.y cfg_lex.l
+irqd_SOURCES = irqd.c strategy.c evenly.c interface.c cpu.c event.c \
+	log.c cfg_grammar.y cfg_lex.l
 irqd_LDADD   = ${libglib_LIBS} ${libnl_LIBS} -lrt
