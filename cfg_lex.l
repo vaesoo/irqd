@@ -40,6 +40,7 @@ initial-steering-cpus	return T_INIT_STEER_CPUS;
 \/			T("SLASH");  return '/';
 =			T("EQ");  return '=';
 ,			T("COMMA");  return ',';
+:			T("COLON");  return ':';
 ;			T("SEM");  return ';';
 \{			T("{");  return '{';
 \}			T("}");  return '}';

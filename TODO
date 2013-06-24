@@ -1,5 +1,7 @@
 * use bison %locations
 
+* strategy "static" { }: make empty curly braces optional
+
 * balance non-NIC IRQs
 
 * implement other strategy, using less CPUs

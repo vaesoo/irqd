@@ -16,6 +16,7 @@ void yyerr_printf(const char *, ...);
 int yyget_lineno(void);
 
 static struct cpuset *g_cpuset;
+static int g_from, g_to;
 %}
 
 /* create a pure, reentrant parser */
@@ -31,7 +32,7 @@ static struct cpuset *g_cpuset;
 %token<str> T_ID T_STR;
 %token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN T_STRATEGY
 %token T_INIT_STEER_CPUS
-%token ';' '(' ')' '{' '}' ','
+%token ':' ';' '(' ')' '{' '}' ','
 
 %% /* grammar rules and actions */
 
@@ -42,9 +43,9 @@ stmt: cmd ';';
 
 cmd: cpuset;
 
-cpuset: T_CPUSET T_STR T_NUM T_NUM {
+cpuset: T_CPUSET T_STR range {
 		assert(g_cpuset == NULL);
-		if ((g_cpuset = cpuset_new($2, $3, $4)) == NULL) {
+		if ((g_cpuset = cpuset_new($2, g_from, g_to)) == NULL) {
 			yyerr_printf("cpuset invalid");
 			YYERROR;
 		}
@@ -62,6 +63,14 @@ cpuset: T_CPUSET T_STR T_NUM T_NUM {
 	};
 cpuset_blk: /* empty */ | cpuset_blk cpuset_cmds ';';
 cpuset_cmds: devs | strategy;
+
+	/* FIXME don't allow whitespace here */
+range: T_NUM ':' T_NUM {
+		g_from = $1;
+		g_to = $3;
+	} | T_NUM {
+		g_from = g_to = $1;
+	}
 
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';

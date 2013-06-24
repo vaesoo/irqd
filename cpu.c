@@ -537,14 +537,14 @@ cpu_bitmask_mask64(const struct cpu_bitmask *bmask)
 }
 
 struct cpuset *
-cpuset_new(const char *name, unsigned from, unsigned len)
+cpuset_new(const char *name, unsigned from, unsigned to)
 {
 	struct cpuset *set;
 	int cpu;
 
 	BUG_ON(!num_cpus);
-	if (from >= num_cpus || from + len > num_cpus) {
-		dbg("cpuset: out of range (first %u, len %u)", from, len);
+	if (from > to  || to > num_cpus) {
+		dbg("cpuset: out of range (from %u, to %u)", from, to);
 		return NULL;
 	}
 
@@ -555,9 +555,9 @@ cpuset_new(const char *name, unsigned from, unsigned len)
 		return NULL;
 	}
 	set->cs_from = from;
-	set->cs_len = len;
+	set->cs_to = to;
 
-	for (cpu = from; cpu < from + len; cpu++) {
+	for (cpu = from; cpu <= to; cpu++) {
 		set->cs_cpu_lru_list = g_slist_append(set->cs_cpu_lru_list, &cpus[cpu]);
 		BUG_ON(cpus[cpu].ci_cpuset);
 		cpus[cpu].ci_cpuset = set;
@@ -584,8 +584,8 @@ cpuset_dump(void)
 		const GSList *dev_node;
 
 		printf("cpuset['%s']: cpus=%d-%d strategy='%s'\n",
-			   set->cs_name, set->cs_from,
-			   set->cs_from + set->cs_len - 1, set->cs_strategy.s_type->name);
+			   set->cs_name, set->cs_from, set->cs_to,
+			   set->cs_strategy.s_type->name);
 		for (dev_node = set->cs_dev_list; dev_node; dev_node = dev_node->next) {
 			struct interface *iface = dev_to_if(dev_node->data);
 

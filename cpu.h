@@ -121,7 +121,7 @@ struct device;
 
 struct cpuset {
 	unsigned cs_from;
-	unsigned cs_len;
+	unsigned cs_to;
 #define CS_F_AUTO_ASSIGN		0x0001
 	unsigned cs_flags;
 	char *cs_name;
@@ -152,7 +152,7 @@ void cpuset_dump(void);
 static inline unsigned
 cpuset_len(const struct cpuset *set)
 {
-	return set->cs_len;
+	return set->cs_to - set->cs_from + 1;
 }
 
 static inline unsigned
