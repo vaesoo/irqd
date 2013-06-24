@@ -15,6 +15,8 @@ void yyerror(char *);
 void yyerr_printf(const char *, ...);
 int yyget_lineno(void);
 
+static int cfg_if_add(const char *, struct cpuset *, const struct range *);
+
 static struct cpuset *g_cpuset;
 static struct range g_range;
 %}
@@ -88,18 +90,16 @@ range: T_NUM ':' T_NUM {
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';
 devs_cmds: iface | iface_auto_assign;
-iface: T_IFACE T_STR {
-		struct interface *iface = if_new($2, g_cpuset);
-		int ret;
-
-		assert(g_cpuset != NULL);
-		if ((ret = cpuset_add_device(g_cpuset, if_to_dev(iface))) < 0) {
-			yyerr_printf("%s: %s", $2, strerror(-ret));
-			if_free(iface);
+iface: T_IFACE T_STR range {
+		if (cfg_if_add($2, g_cpuset, $3) < 0) {
+			/* failed to create interface */
 			YYERROR;
 		}
-
-		if_register(iface);
+	} | T_IFACE T_STR {
+		if (cfg_if_add($2, g_cpuset, NULL) < 0) {
+			/* failed to create interface */
+			YYERROR;
+		}
 	};
 iface_auto_assign: T_IFACE_AUTO_ASSIGN {
 		assert(g_cpuset != NULL);
@@ -128,6 +128,28 @@ init_steer_cpus: T_INIT_STEER_CPUS T_NUM {
 %%
 
 /* epilogue */
+
+static int
+cfg_if_add(const char *name, struct cpuset *set, const struct range *range)
+{
+	struct interface *iface;
+
+	assert(set != NULL);
+
+	if ((iface = if_new(name, set)) == NULL)
+		goto err;
+	if (cpuset_add_device(set, if_to_dev(iface)) < 0)
+		goto err;
+
+	if (range && if_assign_fixed_range(iface, range) < 0)
+			goto err;
+
+	return if_register(iface);
+
+err:
+	if_free(iface);
+	return -1;
+}
 
 void
 yyerror(char *msg)

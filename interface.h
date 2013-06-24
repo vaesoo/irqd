@@ -50,6 +50,9 @@ struct interface {
 	/* the CPUs we are allowed to run on */
 	struct cpuset *if_cpuset;
 
+	/* range specifying a subset of CPUs to be used */
+	struct range *if_fixed_range;
+
 	/* Linux net_device_stats */
 	struct if_net_device_stats {
 		uint64_t rx_bytes;		/* total bytes received */
@@ -93,6 +96,8 @@ dev_to_if(struct device *dev)
 
 struct if_queue_info *if_queue(const struct interface *, int);
 struct if_queue_info *if_queue_by_name(const char *, int);
+
+int if_assign_fixed_range(struct interface *, const struct range *);
 
 static inline bool
 if_is_multiqueue(struct interface *iface)

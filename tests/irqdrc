@@ -14,7 +14,10 @@ cpuset "network" 0:1 {
 	devices {
 		// assign interface manually
 		// interface "eth0";
-		// interface "eth1";
+
+		// optionally pass CPU subrange, which can be helpfull for
+		// testing.
+		interface "eth1" 1;
 
 		// add interfaces to this cpuset automatically
 		interface-auto-assign;

@@ -565,9 +565,17 @@ range_valid(const struct range *range)
 }
 
 bool
-range_in(const struct range *range, unsigned n)
+cpu_in_range(const struct range *rg, unsigned cpu)
 {
-	return n >= range->rg_from && n <= range->rg_to;
+	return cpu >= rg->rg_from && cpu <= rg->rg_to;
+}
+
+bool
+range_in_range(const struct range *rg, const struct range *subrg)
+{
+	return range_valid(subrg)
+		&& subrg->rg_from >= rg->rg_from
+		&& subrg->rg_to <= rg->rg_to;
 }
 
 struct cpuset *
@@ -705,7 +713,7 @@ cpuset_get_by_name(const char *name)
 bool
 cpuset_in(const struct cpuset *set, unsigned n)
 {
-	return range_in(&set->cs_range, n);
+	return cpu_in_range(&set->cs_range, n);
 }
 
 int
@@ -753,15 +761,38 @@ cpuset_cpu_busy(struct cpuset *set, struct cpu_info *ci)
 	return 0;
 }
 
+/**
+ * cpuset_balance_queue() - actually assign queue to CPUs
+ *
+ * A fixed CPU range of CPUs takes precedence over other the strategy.
+ * If no fixed CPU range is specified the strategy handler is
+ * consulted.
+ */
 int
 cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
 {
 	struct if_queue_info *qi = if_queue(iface, queue);
 	uint64_t cpumask;
 
-	if (set->cs_strategy.s_type->balance_queue)
-		if (set->cs_strategy.s_type->balance_queue(iface, queue) < 0)
-			return -1;
+	/* a fixed range takes precedence over the balance strategy being
+	   used */
+	if (iface->if_fixed_range != NULL) {
+		const struct range *range = iface->if_fixed_range;
+		int cpu;
+
+		for (cpu = range->rg_from; cpu <= range->rg_to; cpu++) {
+			if (!cpu_bitmask_set(qi->qi_cpu_bitmask, cpu))
+				BUG();
+			if (cpu_add_queue(cpu, iface, queue) < 0)
+				return -1;
+		}
+	} else {
+		if (set->cs_strategy.s_type->balance_queue)
+			if (set->cs_strategy.s_type->balance_queue(iface, queue) < 0)
+				return -1;
+	}
+
+	BUG_ON(cpu_bitmask_ncpus(qi->qi_cpu_bitmask) == 0);
 
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
 	if (g_rps_status == RPS_S_ENABLED || g_xps_status == XPS_S_ENABLED)

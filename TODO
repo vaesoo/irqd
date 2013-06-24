@@ -1,5 +1,7 @@
 * use bison %locations
 
+* config: specifying an invalid range does not give an error
+
 * strategy "static" { }: make empty curly braces optional
 
 * balance non-NIC IRQs

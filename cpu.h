@@ -127,7 +127,8 @@ struct range {
 struct range *range_new(unsigned, unsigned);
 void range_free(struct range *);
 bool range_valid(const struct range *);
-bool range_in(const struct range *, unsigned);
+bool cpu_in_range(const struct range *, unsigned);
+bool range_in_range(const struct range *, const struct range *);
 
 struct cpuset {
 	struct range cs_range;

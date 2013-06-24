@@ -142,6 +142,35 @@ if_queue_by_name(const char *dev, int queue)
 	return if_queue(iface, queue);
 }
 
+/*
+ * if_assign_fixed_range() - assign an unchangeable subrange
+ *
+ * Intended use-case is for single-queue NICs, but all queues
+ * are pinned if there are multiple queues.
+ *
+ * The actual pinning happens at the time the interface comes
+ * up.
+ */
+int
+if_assign_fixed_range(struct interface *iface, const struct range *range)
+{
+	struct cpuset *set = iface->if_cpuset;
+
+	BUG_ON(set == NULL);
+	if (!range_in_range(&set->cs_range, range)) {
+		dbg("range [%u,%u] within '%s' cpuset is invalid",
+			range->rg_from, range->rg_to, set->cs_name);
+		return -EINVAL;
+	}
+
+	BUG_ON(iface->if_fixed_range);
+	iface->if_fixed_range = range_new(range->rg_from, range->rg_to);
+	if (!iface->if_fixed_range)
+		return -ENOMEM;
+
+	return 0;
+}
+
 bool
 if_can_rps(const struct interface *iface)
 {
