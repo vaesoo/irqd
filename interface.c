@@ -178,6 +178,10 @@ parse_irq_action(const char *tok, const char *dev, int *queue)
 	snprintf(pattern, sizeof(pattern), "%s[%%u]", dev);
 	if (sscanf(tok, pattern, queue) == 1)
 		return 1;
+	/* Broadcom bnx2 */
+	snprintf(pattern, sizeof(pattern), "%s-%%u", dev);
+	if (sscanf(tok, pattern, queue) == 1)
+		return 1;
 
 	return 0;
 }
@@ -476,6 +480,7 @@ parse_eth_action(const char *str, char *dev, size_t dev_len, int *queue)
 	if (sscanf(str, "eth%d-TxRx-%d", &n, queue) == 2
 		|| sscanf(str, "eth%d[%d]", &n, queue) == 2
 		|| sscanf(str, "eth%d-rx-%d", &n, queue) == 2
+		|| sscanf(str, "eth%d-%d", &n, queue) == 2
 		|| sscanf(str, "eth%d", &n) == 1) {
 		snprintf(dev, IFNAMSIZ, "eth%d", n);
 		return 1;
