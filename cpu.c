@@ -41,9 +41,9 @@ cpu_cmp(gconstpointer __a, gconstpointer __b)
 {
 	const struct cpu_info *a = __a, *b = __b;
 
-	if (a->ci_num_queues != b->ci_num_queues)
-		return a->ci_num_queues - b->ci_num_queues;
-	return a->ci_num - b->ci_num;
+	if (b->ci_num_queues != a->ci_num_queues)
+		return b->ci_num_queues - a->ci_num_queues;
+	return b->ci_num - a->ci_num;
 }
 
 void
