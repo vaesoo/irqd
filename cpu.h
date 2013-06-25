@@ -132,8 +132,6 @@ bool range_in_range(const struct range *, const struct range *);
 
 struct cpuset {
 	struct range cs_range;
-#define CS_F_AUTO_ASSIGN		0x0001
-	unsigned cs_flags;
 	char *cs_name;
 
 	struct strategy cs_strategy;

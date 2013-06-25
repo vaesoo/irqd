@@ -119,7 +119,8 @@ out_read:
 		cpuset_set_auto_assign(set);
 		cpuset_set_strategy(set, "evenly");
 		cpuset_list_add(set);
-	}
+	} else
+		cpuset_set_auto_assign(g_slist_nth_data(cpuset_list, 0));
 
 	if (fp)
 		fclose(fp);

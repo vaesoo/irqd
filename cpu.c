@@ -642,16 +642,8 @@ cpuset_dump(void)
 int
 cpuset_set_auto_assign(struct cpuset *set)
 {
-	GSList *node;
-
-	for (node = cpuset_list; node; node = node->next) {
-		const struct cpuset *tmp = node->data;
-
-		if (tmp->cs_flags & CS_F_AUTO_ASSIGN)
-			return -EEXIST;
-	}
-
-	set->cs_flags |= CS_F_AUTO_ASSIGN;
+	if (g_cpuset_auto_assign)
+		return -EEXIST;
 	g_cpuset_auto_assign = set;
 	
 	return 0;

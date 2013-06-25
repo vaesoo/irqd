@@ -56,23 +56,23 @@ if_new(const char *dev, struct cpuset *set)
 {
 	struct interface *iface;
 
-	iface = g_new0(struct interface, 1);
-	if (iface) {
-		device_init(&iface->if_dev, DEV_INTERFACE);
-
-		iface->if_cpuset = set;
-		strncpy(iface->if_name, dev, IFNAMSIZ);
-		iface->if_queues = g_new0(struct if_queue_info, QUEUE_MAX);
-		if (!iface->if_queues) {
-			g_free(iface);
-			iface = NULL;
-		}
-
-		dbg("new interface '%s' (%p)", dev, iface);
+	if ((iface = g_new0(struct interface, 1)) == NULL) {
+		OOM();
+		return NULL;
 	}
 
-	if (!iface)
-		OOM();
+	device_init(&iface->if_dev, DEV_INTERFACE);
+
+	iface->if_cpuset = set;
+	strncpy(iface->if_name, dev, IFNAMSIZ);
+	iface->if_queues = g_new0(struct if_queue_info, QUEUE_MAX);
+	if (!iface->if_queues) {
+		g_free(iface);
+		iface = NULL;
+	}
+
+	dbg("new interface '%s' (%p)", dev, iface);
+
 	return iface;
 }
 
