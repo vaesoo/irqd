@@ -42,11 +42,6 @@ struct interface {
 	/* must come first */
 	struct device if_dev;
 
-	enum InterfaceState {
-		IF_S_DOWN = 0,
-		IF_S_UP					/* == IFF_UP */
-	} if_state;
-
 	unsigned if_flags;
 
 	struct if_queue_info *if_queues;
@@ -94,18 +89,6 @@ dev_to_if(struct device *dev)
 {
 	BUG_ON(dev->type != DEV_INTERFACE);
 	return (struct interface *)dev;
-}
-
-static inline void
-if_set_state(struct interface *iface, enum InterfaceState state)
-{
-	iface->if_state = state;
-}
-
-static inline int
-if_state(struct interface *iface)
-{
-	return iface->if_state;
 }
 
 struct if_queue_info *if_queue(const struct interface *, int);

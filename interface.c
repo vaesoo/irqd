@@ -383,7 +383,6 @@ if_on_up(struct interface *iface, const char *dev)
 	for (i = 0; i < iface->if_num_queues; i++)
 		cpuset_balance_queue(iface->if_cpuset, iface, i);
 
-	if_set_state(iface, IF_S_UP);
 	log("%s: up", iface->if_name);
 
 	return 0;
@@ -406,7 +405,6 @@ if_on_down(struct interface *iface, const char *dev)
 				cpu_del_queue(cpu, qi);
 	}
 
-	if_set_state(iface, IF_S_DOWN);
 	log("%s: down", iface->if_name);
 
 	cpu_dump_map();
