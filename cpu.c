@@ -719,8 +719,21 @@ cpuset_cpu_busy(struct cpuset *set, struct cpu_info *ci)
 int
 cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
 {
+	struct if_queue_info *qi = if_queue(iface, queue);
+	uint64_t cpumask;
+
 	if (set->cs_strategy.s_type->balance_queue)
-		return set->cs_strategy.s_type->balance_queue(iface, queue);
+		if (set->cs_strategy.s_type->balance_queue(iface, queue) < 0)
+			return -1;
+
+	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
+	if (g_rps_status == RPS_S_ENABLED || g_xps_status == XPS_S_ENABLED)
+		if_set_steering_cpus(iface, queue, cpumask, cpumask);
+	if (qi->qi_irq >= 0)
+		irq_set_affinity(qi->qi_irq, cpumask);
+
+	log("%s:%d: affinity irq=%#" PRIx64 " rps/xps=%#" PRIx64,
+		iface->if_name, queue, cpumask, cpumask);
 
 	return 0;
 }

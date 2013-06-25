@@ -63,13 +63,11 @@ rps_select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 	return NULL;
 }
 
-/* supports both RPS and non-RPS systems */
 static int
 evenly_balance_queue(struct interface *iface, int queue)
 {
 	struct if_queue_info *qi;
 	struct cpu_info *ci;
-	uint64_t cpumask;
 
 	if ((ci = cpu_add_queue_lru(iface, queue)) == NULL)
 		return -1;
@@ -91,15 +89,6 @@ evenly_balance_queue(struct interface *iface, int queue)
 			}
 		}
 	}
-
-	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
-	if (g_rps_status == RPS_S_ENABLED || g_xps_status == XPS_S_ENABLED)
-		if_set_steering_cpus(iface, queue, cpumask, cpumask);
-	if (qi->qi_irq >= 0)
-		irq_set_affinity(qi->qi_irq, cpumask);
-
-	log("%s:%d: affinity irq=%#" PRIx64 " rps/xps=%#" PRIx64,
-		iface->if_name, queue, cpumask, cpumask);
 
 	return 0;
 }
