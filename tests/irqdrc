@@ -8,7 +8,7 @@ cpuset "network" 0:1 {
 		// Initial number of CPUs used for packet steering (default: 2).
 		// If you specify 1 you may be better off with another strategy.
 		// valid: 1 - 4
-		initial-steering-cpus 1;
+		initial-steering-cpus 2;
 	};
 
 	devices {
