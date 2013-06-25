@@ -66,7 +66,7 @@ cpuset: T_CPUSET T_STR range {
 		g_cpuset = NULL;
 	};
 cpuset_blk: /* empty */ | cpuset_blk cpuset_cmds ';';
-cpuset_cmds: devs | strategy;
+cpuset_cmds: devs | strategy | iface_auto_assign;
 
 	/* FIXME don't allow whitespace here */
 range: T_NUM ':' T_NUM {
@@ -89,7 +89,7 @@ range: T_NUM ':' T_NUM {
 
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';
-devs_cmds: iface | iface_auto_assign;
+devs_cmds: iface;
 iface: T_IFACE T_STR range {
 		if (cfg_if_add($2, g_cpuset, $3) < 0) {
 			/* failed to create interface */
@@ -101,6 +101,7 @@ iface: T_IFACE T_STR range {
 			YYERROR;
 		}
 	};
+
 iface_auto_assign: T_IFACE_AUTO_ASSIGN {
 		assert(g_cpuset != NULL);
 		if (cpuset_set_auto_assign(g_cpuset) < 0) {

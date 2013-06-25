@@ -18,9 +18,11 @@ cpuset "network" 0:1 {
 		// optionally pass CPU subrange, which can be helpfull for
 		// testing.
 		interface "eth1" 1;
-
-		// add interfaces to this cpuset automatically
-		interface-auto-assign;
 	};
+
+	// Add interfaces to this cpuset automatically.  Only one
+	// cpuset can use it, otherwise the first cpuset is the
+	// one receiving new NICs.
+	interface-auto-assign;
 };
 
