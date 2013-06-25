@@ -119,9 +119,18 @@ static inline int cpu_bitmask_ncpus(const struct cpu_bitmask *bmask)
 
 struct device;
 
+struct range {
+	int rg_from;
+	int rg_to;
+};
+
+struct range *range_new(unsigned, unsigned);
+void range_free(struct range *);
+bool range_valid(const struct range *);
+bool range_in(const struct range *, unsigned);
+
 struct cpuset {
-	unsigned cs_from;
-	unsigned cs_to;
+	struct range cs_range;
 #define CS_F_AUTO_ASSIGN		0x0001
 	unsigned cs_flags;
 	char *cs_name;
@@ -136,7 +145,7 @@ struct cpuset {
 
 extern struct cpuset *g_cpuset_auto_assign;
 
-struct cpuset *cpuset_new(const char *, unsigned first, unsigned len);
+struct cpuset *cpuset_new(const char *, const struct range *);
 void cpuset_free(struct cpuset *);
 GSList *cpuset_get_by_name(const char *);
 int cpuset_add_device(struct cpuset *, struct device *);
@@ -152,13 +161,13 @@ void cpuset_dump(void);
 static inline unsigned
 cpuset_len(const struct cpuset *set)
 {
-	return set->cs_to - set->cs_from + 1;
+	return set->cs_range.rg_to - set->cs_range.rg_from + 1;
 }
 
 static inline unsigned
 cpuset_last_cpu(const struct cpuset *set)
 {
-	return set->cs_from + cpuset_len(set) - 1;
+	return set->cs_range.rg_from + cpuset_len(set) - 1;
 }
 
 #endif /* CPU_H */

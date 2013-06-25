@@ -1,6 +1,6 @@
 
 /* cpuset "NAME" FROM[:TO] */
-cpuset "network" 0 {
+cpuset "network" 0:1 {
 	// set strategy per cpuset (default: evenly)
 	//
 	// evenly - spread IRQs evenly across CPUs

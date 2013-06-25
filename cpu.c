@@ -449,9 +449,10 @@ int
 cpu_bitmask_set(struct cpu_bitmask *bmask, unsigned cpu)
 {
 	const struct cpuset *set = bmask->cpuset;
+	const struct range *rg = &set->cs_range;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < rg->rg_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if ((bmask->data[off] & (1 << bit)) == 0) {
 		bmask->data[off] |= (1 << bit);
@@ -470,9 +471,10 @@ int
 cpu_bitmask_clear(struct cpu_bitmask *bmask, unsigned cpu)
 {
 	const struct cpuset *set = bmask->cpuset;
+	const struct range *rg = &set->cs_range;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < rg->rg_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	if (bmask->data[off] & (1 << bit)) {
 		bmask->data[off] &= ~(1 << bit);
@@ -489,9 +491,10 @@ bool
 cpu_bitmask_is_set(const struct cpu_bitmask *bmask, unsigned cpu)
 {
 	const struct cpuset *set = bmask->cpuset;
+	const struct range *rg = &set->cs_range;
 	int off = cpu / CPUSET_BITS, bit = cpu % CPUSET_BITS;
 
-	BUG_ON(cpu < set->cs_from || cpu > cpuset_last_cpu(set));
+	BUG_ON(cpu < rg->rg_from || cpu > cpuset_last_cpu(set));
 	BUG_ON(off >= bmask->len);
 	return (bmask->data[off] & (1 << bit)) != 0;
 }
@@ -536,15 +539,49 @@ cpu_bitmask_mask64(const struct cpu_bitmask *bmask)
 	return mask;
 }
 
+struct range *
+range_new(unsigned from, unsigned to)
+{
+	struct range *range;
+
+	if ((range = g_malloc(sizeof(struct range))) == NULL)
+		return NULL;
+	range->rg_from = from;
+	range->rg_to = to;
+
+	return range;
+}
+
+void
+range_free(struct range *range)
+{
+	free(range);
+}
+
+bool
+range_valid(const struct range *range)
+{
+	return range->rg_from <= range->rg_to;
+}
+
+bool
+range_in(const struct range *range, unsigned n)
+{
+	return n >= range->rg_from && n <= range->rg_to;
+}
+
 struct cpuset *
-cpuset_new(const char *name, unsigned from, unsigned to)
+cpuset_new(const char *name, const struct range *range)
 {
 	struct cpuset *set;
 	int cpu;
 
+	BUG_ON(!range);
 	BUG_ON(!num_cpus);
-	if (from > to  || to > num_cpus) {
-		dbg("cpuset: out of range (from %u, to %u)", from, to);
+	if (range->rg_from > range->rg_to
+		|| range->rg_to > num_cpus) {
+		dbg("cpuset: out of range (from %u, to %u)", range->rg_from,
+			range->rg_to);
 		return NULL;
 	}
 
@@ -554,10 +591,10 @@ cpuset_new(const char *name, unsigned from, unsigned to)
 		cpuset_free(set);
 		return NULL;
 	}
-	set->cs_from = from;
-	set->cs_to = to;
 
-	for (cpu = from; cpu <= to; cpu++) {
+	memcpy(&set->cs_range, range, sizeof(struct range));
+
+	for (cpu = range->rg_from; cpu <= range->rg_to; cpu++) {
 		set->cs_cpu_lru_list = g_slist_append(set->cs_cpu_lru_list, &cpus[cpu]);
 		BUG_ON(cpus[cpu].ci_cpuset);
 		cpus[cpu].ci_cpuset = set;
@@ -584,7 +621,7 @@ cpuset_dump(void)
 		const GSList *dev_node;
 
 		printf("cpuset['%s']: cpus=%d-%d strategy='%s'\n",
-			   set->cs_name, set->cs_from, set->cs_to,
+			   set->cs_name, set->cs_range.rg_from, set->cs_range.rg_to,
 			   set->cs_strategy.s_type->name);
 		for (dev_node = set->cs_dev_list; dev_node; dev_node = dev_node->next) {
 			struct interface *iface = dev_to_if(dev_node->data);
@@ -668,7 +705,7 @@ cpuset_get_by_name(const char *name)
 bool
 cpuset_in(const struct cpuset *set, unsigned n)
 {
-	return n >= set->cs_from && n < set->cs_from + cpuset_len(set);
+	return range_in(&set->cs_range, n);
 }
 
 int
@@ -688,7 +725,7 @@ cpuset_list_add(struct cpuset *new)
 
 		if (!strcmp(set->cs_name, new->cs_name))
 			return -EBUSY;
-		if (cpuset_in(set, new->cs_from)
+		if (cpuset_in(set, new->cs_range.rg_from)
 			|| cpuset_in(set, cpuset_last_cpu(new)))
 			return -EINVAL;
 	}

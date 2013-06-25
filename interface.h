@@ -108,13 +108,7 @@ if_state(struct interface *iface)
 	return iface->if_state;
 }
 
-static inline struct if_queue_info *
-if_queue(const struct interface *iface, int queue)
-{
-	BUG_ON(queue < 0 || queue >= QUEUE_MAX);
-	return &iface->if_queues[queue];
-}
-
+struct if_queue_info *if_queue(const struct interface *, int);
 struct if_queue_info *if_queue_by_name(const char *, int);
 
 static inline bool

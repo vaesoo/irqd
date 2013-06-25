@@ -42,11 +42,11 @@ rps_select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 
 	for (order = 1; order < RPS_CPU_MAX_ORDER; order++) {
 		unsigned order_ncpus = 1 << order;
-		int order_base = (cpu - set->cs_from) / order_ncpus * order_ncpus,
-			probe;
+		int order_base, probe;
 
+		order_base = (cpu - set->cs_range.rg_from) / order_ncpus * order_ncpus;
 		for (probe = 0; probe < order_ncpus; probe++) {
-			unsigned c = set->cs_from + order_base + probe;
+			unsigned c = set->cs_range.rg_from + order_base + probe;
 
 			if (cpuset_in(set, c)
 				&& !cpu_bitmask_is_set(qi->qi_cpu_bitmask, c)) {

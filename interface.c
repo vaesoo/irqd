@@ -125,6 +125,13 @@ if_assign_cpuset_by_name(struct interface *iface, const char *name)
 }
 
 struct if_queue_info *
+if_queue(const struct interface *iface, int queue)
+{
+	BUG_ON(queue < 0 || queue >= QUEUE_MAX);
+	return &iface->if_queues[queue];
+}
+
+struct if_queue_info *
 if_queue_by_name(const char *dev, int queue)
 {
 	const struct interface *iface;
@@ -394,7 +401,7 @@ if_on_down(struct interface *iface, const char *dev)
 		struct if_queue_info *qi = if_queue(iface, queue);
 		int cpu;
 
-		for (cpu = set->cs_from; cpu <= cpuset_last_cpu(set); cpu++)
+		for (cpu = set->cs_range.rg_from; cpu <= cpuset_last_cpu(set); cpu++)
 			if (cpu_bitmask_clear(qi->qi_cpu_bitmask, cpu))
 				cpu_del_queue(cpu, qi);
 	}

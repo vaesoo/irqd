@@ -16,7 +16,7 @@ void yyerr_printf(const char *, ...);
 int yyget_lineno(void);
 
 static struct cpuset *g_cpuset;
-static int g_from, g_to;
+static struct range g_range;
 %}
 
 /* create a pure, reentrant parser */
@@ -26,6 +26,7 @@ static int g_from, g_to;
 %union {
 	char *str;
 	int val;
+	struct range *range;
 }
 
 %token<val> T_NUM
@@ -33,6 +34,7 @@ static int g_from, g_to;
 %token T_CPUSET T_DEVS T_IFACE T_IFACE_AUTO_ASSIGN T_STRATEGY
 %token T_INIT_STEER_CPUS
 %token ':' ';' '(' ')' '{' '}' ','
+%type<range> range
 
 %% /* grammar rules and actions */
 
@@ -45,7 +47,7 @@ cmd: cpuset;
 
 cpuset: T_CPUSET T_STR range {
 		assert(g_cpuset == NULL);
-		if ((g_cpuset = cpuset_new($2, g_from, g_to)) == NULL) {
+		if ((g_cpuset = cpuset_new($2, $3)) == NULL) {
 			yyerr_printf("cpuset invalid");
 			YYERROR;
 		}
@@ -66,11 +68,22 @@ cpuset_cmds: devs | strategy;
 
 	/* FIXME don't allow whitespace here */
 range: T_NUM ':' T_NUM {
-		g_from = $1;
-		g_to = $3;
+		g_range.rg_from = $1;
+		g_range.rg_to = $3;
+		if (!range_valid(&g_range)) {
+			/* TODO range invalid */
+			YYERROR;
+		}
+
+		$$ = &g_range;
 	} | T_NUM {
-		g_from = g_to = $1;
-	}
+		g_range.rg_from = g_range.rg_to = $1;
+		if (!range_valid(&g_range)) {
+			/* TODO invalid range error */
+			YYERROR;
+		}
+		$$ = &g_range;
+	};
 
 devs: T_DEVS '{' devs_blk '}';
 devs_blk: /* empty */ | devs_blk devs_cmds ';';
