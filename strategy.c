@@ -22,8 +22,23 @@ GSList *strategy_type_list;
 
 extern struct strategy_type evenly_strategy_type;
 
+static int
+static_balance_queue(struct interface *iface, int queue)
+{
+	const struct cpuset *set = iface->if_cpuset;
+	struct if_queue_info *qi;
+
+	BUG_ON(iface->if_fixed_range != NULL);
+
+	qi = if_queue(iface, queue);
+	if_queue_assign_range(qi, &set->cs_range);
+
+	return 0;
+}
+
 struct strategy_type static_strategy_type = {
 	.name = "static",
+	.balance_queue = static_balance_queue,
 };
 
 struct strategy_type *

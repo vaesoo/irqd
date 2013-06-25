@@ -142,6 +142,26 @@ if_queue_by_name(const char *dev, int queue)
 	return if_queue(iface, queue);
 }
 
+/**
+ * if_queue_assign_range() - assign CPUs in range to queue
+ *
+ * Low-level function to assign CPUs to an interface queue.
+ */
+int
+if_queue_assign_range(struct if_queue_info *qi, const struct range *range)
+{
+	int cpu;
+
+	for (cpu = range->rg_from; cpu <= range->rg_to; cpu++) {
+		if (!cpu_bitmask_set(qi->qi_cpu_bitmask, cpu))
+			BUG();
+		if (cpu_add_queue(cpu, qi->qi_iface, qi->qi_num) < 0)
+			return -1;
+	}
+
+	return 0;
+}
+
 /*
  * if_assign_fixed_range() - assign an unchangeable subrange
  *

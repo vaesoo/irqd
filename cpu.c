@@ -787,9 +787,8 @@ cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
 				return -1;
 		}
 	} else {
-		if (set->cs_strategy.s_type->balance_queue)
-			if (set->cs_strategy.s_type->balance_queue(iface, queue) < 0)
-				return -1;
+		if (set->cs_strategy.s_type->balance_queue(iface, queue) < 0)
+			return -1;
 	}
 
 	BUG_ON(cpu_bitmask_ncpus(qi->qi_cpu_bitmask) == 0);

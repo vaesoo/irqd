@@ -96,6 +96,7 @@ dev_to_if(struct device *dev)
 
 struct if_queue_info *if_queue(const struct interface *, int);
 struct if_queue_info *if_queue_by_name(const char *, int);
+int if_queue_assign_range(struct if_queue_info *, const struct range *);
 
 int if_assign_fixed_range(struct interface *, const struct range *);
 
