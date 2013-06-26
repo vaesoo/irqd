@@ -1,6 +1,11 @@
 * use bison %locations
 
+* use SIGHUP for reconfiguration
+
 * config: specifying an invalid range does not give an error
+
+* load strategies from DSO, allowing to make the balancing
+  decision dependant on system configuration.
 
 * strategy "static" { }: make empty curly braces optional
 
