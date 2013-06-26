@@ -119,14 +119,8 @@ queue_map_cpu(struct if_queue_info *qi)
 	uint64_t cpumask;
 
 	BUG_ON(iface->if_num_queues > 1);
-	if ((ci_new = rps_select_nearby_cpu(qi, cpu)) == NULL) {
-		BUG_ON(ci_new->ci_cpuset != set);
-		if (!set->cs_cpu_lru_list
-			|| (ci_new = set->cs_cpu_lru_list->data) == NULL)
-			return 0;
-		if (!cpu_is_idle(ci_new))
-			return 0;
-	}
+	if ((ci_new = rps_select_nearby_cpu(qi, cpu)) == NULL)
+		return 0;
 
 	if (cpu_bitmask_set(qi->qi_cpu_bitmask, ci_new->ci_num))
 		cpu_add_queue(ci_new->ci_num, iface, qi->qi_num);
