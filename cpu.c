@@ -398,8 +398,6 @@ cpu_dump_map(void)
 	for (cpu = 0; cpu < num_cpus; cpu++) {
 		GSList *node;
 
-		if (!cpus[cpu].ci_queues)
-			continue;
 		if (fprintf(fp, "cpu%d:", cpu) == EOF)
 			goto out;
 
