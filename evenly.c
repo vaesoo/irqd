@@ -127,8 +127,8 @@ queue_map_cpu(struct if_queue_info *qi)
 
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
 	if_set_steering_cpus(iface, qi->qi_num, cpumask, cpumask);
-	if (qi->qi_irq >= 0)
-		irq_set_affinity(qi->qi_irq, cpumask);
+
+	queue_set_affinity(qi, cpumask);
 
 	log("%s:%d: rps_cpus=%#" PRIx64 " smp_affinity=%#" PRIx64,
 		iface->if_name, qi->qi_num, cpumask, cpumask);

@@ -786,8 +786,8 @@ cpuset_balance_queue(struct cpuset *set, struct interface *iface, int queue)
 	cpumask = cpu_bitmask_mask64(qi->qi_cpu_bitmask);
 	if (g_rps_status == RPS_S_ENABLED || g_xps_status == XPS_S_ENABLED)
 		if_set_steering_cpus(iface, queue, cpumask, cpumask);
-	if (qi->qi_irq >= 0)
-		irq_set_affinity(qi->qi_irq, cpumask);
+
+	queue_set_affinity(qi, cpumask);
 
 	log("%s:%d: affinity irq=%#" PRIx64 " rps/xps=%#" PRIx64,
 		iface->if_name, queue, cpumask, cpumask);

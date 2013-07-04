@@ -208,6 +208,7 @@ irq_set_affinity(int irq, uint64_t mask)
 	char path[PATH_MAX], buf[16];
 	int fd, len, nwritten;
 
+	BUG_ON(irq == 0);
 	snprintf(path, sizeof(path), "/proc/irq/%d/smp_affinity", irq);
 	if ((fd = open(path, O_WRONLY | O_CLOEXEC)) < 0) {
 		err("%s: %m", path);
@@ -216,7 +217,8 @@ irq_set_affinity(int irq, uint64_t mask)
 
 	len = snprintf(buf, sizeof(buf), "%" PRIx64 "\n", mask);
 	nwritten = write(fd, buf, len);
-	BUG_ON(nwritten != len);
+	if (nwritten < 0)
+		err("irq%d: error writing smp_affinity: %m", irq);
 
 	close(fd);
 

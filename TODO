@@ -1,5 +1,8 @@
 * use bison %locations
 
+* IRQs: since introducing split RX/TX IRQs check the IRQ stats
+  if they are still correct
+
 * use SIGHUP for reconfiguration
 
 * config: specifying an invalid range does not give an error

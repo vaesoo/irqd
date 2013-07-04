@@ -27,6 +27,13 @@
 #define IRQ_INFO_CHIP_NAME_LEN	32
 #define IRQ_INFO_ACTION_LEN		64
 
+enum ProcIrqAction {
+	PIA_NoMatch = 0,
+	PIA_LSC,					/* Link Control Status */
+	PIA_Rx,
+	PIA_Tx,
+	PIA_RxTx,
+};
 
 struct irq_info {
 	unsigned ii_irq;
@@ -277,43 +284,47 @@ if_set_steering_cpus(const struct interface *iface, int queue,
 	return 0;
 }
 
-/**
- * @return 1: found, 0: not found, <0 error
- */
-static int
-parse_irq_action(const char *tok, const char *dev, int *queue)
+static enum ProcIrqAction
+parse_irq_action(struct interface *iface, const char *action, int *queue)
 {
-	char pattern[32];
+	const int len = strlen(iface->if_name);
 
-	/* this may be just a LSC IRQ */
-	if (!strcmp(tok, dev)) {
-		*queue = 0;
-		return 1;
-	}
-		
-	snprintf(pattern, sizeof(pattern), "%s-TxRx-%%u", dev);
-	if (sscanf(tok, pattern, queue) == 1) 
-		return 1;
+	if (strncmp(iface->if_name, action, len))
+		return PIA_NoMatch;
+
+	*queue = 0;
+
+	action += len;
+	if (*action == '\0')
+		return PIA_LSC;
+
+	if (sscanf(action, "-TxRx-%u", queue) == 1)
+		return PIA_RxTx;
 
 	/* Intel igb driver */
-	snprintf(pattern, sizeof(pattern), "%s-rx-%%u", dev);
-	if (sscanf(tok, pattern, queue) == 1) 
-		return 1;
+	if (sscanf(action, "-rx-%u", queue) == 1)
+		return PIA_Rx;
+	if (sscanf(action, "-tx-%u", queue) == 1)
+		return PIA_Tx;
+
+	/* some Intel e1000e */
+	if (sscanf(action, "-rxtx-%u", queue) == 1)
+		return PIA_RxTx;
 
 	/* Broadcom NICs (netxen, bnx2) */
-	snprintf(pattern, sizeof(pattern), "%s[%%u]", dev);
-	if (sscanf(tok, pattern, queue) == 1)
-		return 1;
+	if (sscanf(action, "[%u]", queue) == 1)
+		return PIA_RxTx;
 	/* Broadcom bnx2 */
-	snprintf(pattern, sizeof(pattern), "%s-%%u", dev);
-	if (sscanf(tok, pattern, queue) == 1)
-		return 1;
+	if (sscanf(action, "-%u", queue) == 1)
+		return PIA_RxTx;
 
-	return 0;
+	log("interrupts: failed to parse '%s'.  Please report.", action - len);
+
+	return PIA_NoMatch;
 }
 
 static struct if_queue_info *
-if_add_queue(struct interface *iface, int queue, int irq)
+if_add_queue(struct interface *iface, int queue, int rx_irq, int tx_irq)
 {
 	struct if_queue_info *qi = if_queue(iface, queue);
 
@@ -325,14 +336,22 @@ if_add_queue(struct interface *iface, int queue, int irq)
 	}
 	qi->qi_num = queue;
 	qi->qi_iface = iface;
-	qi->qi_irq = irq;
+	if (rx_irq > 0)
+		qi->qi_rx_irq = rx_irq;
+	if (tx_irq > 0)
+		qi->qi_tx_irq = tx_irq;
 
 	iface->if_num_queues = max(iface->if_num_queues, queue + 1);
 
 	return qi;
 }
 
-/*
+/**
+ * queues_from_interrupts() - parse /proc/interrupts for for NIC
+ *
+ * See documentation for if_queue_info for the different cases
+ * to consider.
+ *
  * @return 0: ok, -1 on error
  */
 static int
@@ -357,6 +376,7 @@ next_line:
 		struct if_queue_info *qi = NULL;
 		char *pch, *tok, *end, *saveptr;
 		int i, irq, devs = 0;
+		enum ProcIrqAction pia;
 
 		if (getline(&line, &line_len, fp) == EOF)
 			break;
@@ -385,13 +405,41 @@ next_line:
 			if ((tok = strtok_r(NULL, " \t,", &saveptr)) == NULL)
 				break;
 
-			if (parse_irq_action(tok, iface->if_name, &queue) == 1)
-				qi = if_add_queue(iface, queue, irq);
+			pia = parse_irq_action(iface, tok, &queue);
+			switch (pia) {
+			case PIA_LSC:
+				/* this may not be just LSC if both rx_irq and tx_irq
+				   are zero */
+				iface->if_irq = irq;
+				qi = if_add_queue(iface, queue, -1, -1);
+				break;
+
+			case PIA_Rx:
+				qi = if_add_queue(iface, queue, irq, -1);
+				break;
+
+			case PIA_Tx:
+				qi = if_add_queue(iface, queue, -1, irq);
+				break;
+
+			case PIA_RxTx:
+				qi = if_add_queue(iface, queue, irq, irq);
+				break;
+
+			case PIA_NoMatch:
+				qi = NULL;
+				break;
+			}
+
 			devs++;
 		} while (1);
 
-		if (qi && devs > 1)
-			qi->qi_flags |= QI_F_SHARED_IRQ;
+		if (pia == PIA_LSC && devs > 1)
+			iface->if_flags |= IF_F_SHARED_IRQ;
+
+		if (qi && verbose > 1)
+			log("%s: irqs: LSC=%d RX=%d TX=%d\n", iface->if_name,
+				iface->if_irq, qi->qi_rx_irq, qi->qi_tx_irq);
 	}
 
 	free(line);
@@ -406,6 +454,26 @@ err_free:
 		fclose(fp);
 
 	return -1;
+}
+
+int
+queue_set_affinity(const struct if_queue_info *qi, uint64_t cpumask)
+{
+	const struct interface *iface = qi->qi_iface;
+
+	if (qi->qi_rx_irq > 0) {
+		irq_set_affinity(qi->qi_rx_irq, cpumask);
+
+		if (qi->qi_tx_irq > 0 && qi->qi_tx_irq != qi->qi_rx_irq)
+			irq_set_affinity(qi->qi_tx_irq, cpumask);
+	} else {
+	}
+
+	/* virtual interfaces (lo, tun, ...) don't have an IRQ */
+	if (iface->if_irq > 0)
+		irq_set_affinity(iface->if_irq, cpumask);
+
+	return 0;
 }
 
 static int
@@ -425,7 +493,7 @@ if_on_up(struct interface *iface, const char *dev)
 	if (queues_from_interrupts(iface, QUEUE_MAX) < 0) 
 		return -1;
 	if (iface->if_num_queues == 0)
-		if_add_queue(iface, 0, -1); /* lo, tun, etc. */
+		if_add_queue(iface, 0, -1, -1); /* lo, tun, etc. */
 	log("%s: detected %d queue(s), '%s' cpuset", iface->if_name,
 		iface->if_num_queues, iface->if_cpuset->cs_name);
 

@@ -28,11 +28,29 @@ struct cpuset;
 
 typedef unsigned irq_ctr_t;
 
+/*
+ * There are different scenarios possible.  The easiest one is 1) a single
+ * IRQ used for Link Status Control, RX and TX:
+ *
+ *  46:     208685     202268     220905     215620   PCI-MSI-edge      eth0
+ *
+ * There are some NICs with a dedicated LSC IRQ:
+ *
+ *  60:          0          1   PCI-MSI-edge      eth3
+ *  61:          0          0   PCI-MSI-edge      eth3-rxtx-0
+ *
+ * And of course different IRQs used for LSC, RX and TX:
+ *
+ *  51:   12187473   14354377   PCI-MSI-edge      eth0-rx-0
+ *  52:      96883     106078   PCI-MSI-edge      eth0-tx-0
+ *  53:        292        131   PCI-MSI-edge      eth0
+ *
+ * 
+ */
 struct if_queue_info {
 	unsigned qi_num;
-	int qi_irq;
-#define QI_F_SHARED_IRQ			0x0001
-	unsigned qi_flags;
+	int qi_rx_irq;
+	int qi_tx_irq;
 	struct interface *qi_iface;
 	struct cpu_bitmask *qi_cpu_bitmask;	/* both IRQ and RPS affinity */
 	irq_ctr_t qi_irq_stats[2][CPU_MAX];
@@ -42,7 +60,10 @@ struct interface {
 	/* must come first */
 	struct device if_dev;
 
+#define IF_F_SHARED_IRQ			0x0001
 	unsigned if_flags;
+
+	int if_irq;					/* possibly just LSC */
 
 	struct if_queue_info *if_queues;
 	unsigned if_num_queues;
@@ -115,5 +136,7 @@ bool if_can_rps(const struct interface *);
 bool if_can_xps(const struct interface *);
 int if_set_steering_cpus(const struct interface *, int, uint64_t, uint64_t);
 int if_get_queue_stat(struct if_queue_info *);
+
+int queue_set_affinity(const struct if_queue_info *, uint64_t);
 
 #endif /* INTERFACE_H */
