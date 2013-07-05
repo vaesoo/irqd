@@ -112,7 +112,7 @@ config_read(void)
 
 out_read:
 	if (!cpuset_list) {
-		struct range range = { 0, cpu_count() };
+		struct range range = { 0, cpu_count() - 1 };
 
 		if ((set = cpuset_new("default", &range)) == NULL)
 			return -1;
