@@ -626,11 +626,13 @@ queue_update_irqs(struct if_queue_info *qi, const struct irq_info *ii)
 {
 	int cpu;
 
-	memcpy(qi->qi_irqs[OLD], qi->qi_irqs[NEW], cpu_count() * sizeof(unsigned));
-	memcpy(qi->qi_irqs[NEW], ii->ii_handled, cpu_count() * sizeof(unsigned));
+	memcpy(qi->qi_irq_stats[OLD], qi->qi_irq_stats[NEW],
+		   cpu_count() * sizeof(unsigned));
+	memcpy(qi->qi_irq_stats[NEW], ii->ii_handled,
+		   cpu_count() * sizeof(unsigned));
 	for (cpu = 0; cpu < cpu_count(); cpu++)
-		if (qi->qi_irqs[OLD][cpu] > qi->qi_irqs[NEW][cpu])
-			qi->qi_irqs[OLD][cpu] = 0U;
+		if (qi->qi_irq_stats[OLD][cpu] > qi->qi_irq_stats[NEW][cpu])
+			qi->qi_irq_stats[OLD][cpu] = 0U;
 
 #ifdef DEBUG
 	{

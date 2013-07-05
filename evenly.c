@@ -99,7 +99,8 @@ queue_irq_cmp(gconstpointer __a, gconstpointer __b, gpointer data)
 	const struct cpu_info *ci = data;
 	const struct if_queue_info *qia = __a, *qib = __b;
 
-	return qia->qi_irqs[NEW][ci->ci_num] - qib->qi_irqs[NEW][ci->ci_num];
+	return qia->qi_irq_stats[NEW][ci->ci_num]
+		- qib->qi_irq_stats[NEW][ci->ci_num];
 }
 
 /**
