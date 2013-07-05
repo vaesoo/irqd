@@ -114,7 +114,6 @@ static int
 queue_map_cpu(struct if_queue_info *qi)
 {
 	struct interface *iface = qi->qi_iface;
-	struct cpuset *set = iface->if_cpuset;
 	struct cpu_info *ci_new;
 	int cpu = cpu_bitmask_ffs(qi->qi_cpu_bitmask);
 	uint64_t cpumask;
