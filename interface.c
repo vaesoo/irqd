@@ -470,7 +470,6 @@ queue_set_affinity(const struct if_queue_info *qi, uint64_t cpumask)
 
 		if (qi->qi_tx_irq > 0 && qi->qi_tx_irq != qi->qi_rx_irq)
 			irq_set_affinity(qi->qi_tx_irq, cpumask);
-	} else {
 	}
 
 	/* virtual interfaces (lo, tun, ...) don't have an IRQ */
