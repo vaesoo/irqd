@@ -285,7 +285,36 @@ if_set_steering_cpus(const struct interface *iface, int queue,
 }
 
 static enum ProcIrqAction
-parse_irq_action(struct interface *iface, const char *action, int *queue)
+parse_iface_irq_action_tail(const char *tail, int *queue)
+{
+	if (*tail == '\0')
+		return PIA_LSC;
+
+	if (sscanf(tail, "-TxRx-%u", queue) == 1)
+		return PIA_RxTx;
+	/* some Intel e1000e */
+	if (sscanf(tail, "-rxtx-%u", queue) == 1)
+		return PIA_RxTx;
+
+	/* Broadcom NICs (netxen, bnx2) */
+	if (sscanf(tail, "[%u]", queue) == 1)
+		return PIA_RxTx;
+	/* Broadcom bnx2 */
+	if (sscanf(tail, "-%u", queue) == 1)
+		return PIA_RxTx;
+
+	/* Intel igb driver */
+	if (sscanf(tail, "-rx-%u", queue) == 1)
+		return PIA_Rx;
+	if (sscanf(tail, "-tx-%u", queue) == 1)
+		return PIA_Tx;
+
+	return PIA_NoMatch;
+}
+
+static enum ProcIrqAction
+parse_iface_irq_action(struct interface *iface, const char *action,
+					   int *queue)
 {
 	const int len = strlen(iface->if_name);
 
@@ -294,33 +323,7 @@ parse_irq_action(struct interface *iface, const char *action, int *queue)
 
 	*queue = 0;
 
-	action += len;
-	if (*action == '\0')
-		return PIA_LSC;
-
-	if (sscanf(action, "-TxRx-%u", queue) == 1)
-		return PIA_RxTx;
-
-	/* Intel igb driver */
-	if (sscanf(action, "-rx-%u", queue) == 1)
-		return PIA_Rx;
-	if (sscanf(action, "-tx-%u", queue) == 1)
-		return PIA_Tx;
-
-	/* some Intel e1000e */
-	if (sscanf(action, "-rxtx-%u", queue) == 1)
-		return PIA_RxTx;
-
-	/* Broadcom NICs (netxen, bnx2) */
-	if (sscanf(action, "[%u]", queue) == 1)
-		return PIA_RxTx;
-	/* Broadcom bnx2 */
-	if (sscanf(action, "-%u", queue) == 1)
-		return PIA_RxTx;
-
-	log("interrupts: failed to parse '%s'.  Please report.", action - len);
-
-	return PIA_NoMatch;
+	return parse_iface_irq_action_tail(action + len, queue);
 }
 
 static struct if_queue_info *
@@ -405,7 +408,7 @@ next_line:
 			if ((tok = strtok_r(NULL, " \t,", &saveptr)) == NULL)
 				break;
 
-			pia = parse_irq_action(iface, tok, &queue);
+			pia = parse_iface_irq_action(iface, tok, &queue);
 			switch (pia) {
 			case PIA_LSC:
 				/* this may not be just LSC if both rx_irq and tx_irq
@@ -427,6 +430,7 @@ next_line:
 				break;
 
 			case PIA_NoMatch:
+				log("interrupts: failed to parse '%s'.  Please report.", tok);
 				qi = NULL;
 				break;
 			}
@@ -669,26 +673,6 @@ read_net_device_stats(void)
 	return 0;
 }
 
-static int
-parse_eth_action(const char *str, char *dev, size_t dev_len, int *queue)
-{
-	int n;
-
-	BUG_ON(dev_len < IFNAMSIZ);
-	*queue = 0;
-
-	if (sscanf(str, "eth%d-TxRx-%d", &n, queue) == 2
-		|| sscanf(str, "eth%d[%d]", &n, queue) == 2
-		|| sscanf(str, "eth%d-rx-%d", &n, queue) == 2
-		|| sscanf(str, "eth%d-%d", &n, queue) == 2
-		|| sscanf(str, "eth%d", &n) == 1) {
-		snprintf(dev, IFNAMSIZ, "eth%d", n);
-		return 1;
-	}
-
-	return 0;
-}
-
 static void
 queue_update_irqs(struct if_queue_info *qi, const struct irq_info *ii)
 {
@@ -708,11 +692,42 @@ queue_update_irqs(struct if_queue_info *qi, const struct irq_info *ii)
 
 		for (cpu = 0; cpu < cpu_count(); cpu++)
 			pch += snprintf(pch, end - pch, "%d:%d ",
-							cpu, qi->qi_irqs[NEW][cpu]);
+							cpu, qi->qi_irq_stats[NEW][cpu]);
 		buf[127] = '\0';
 		dbg("irqs: %s:%d: %s", qi->qi_iface->if_name, qi->qi_num, buf);
 	}
 #endif
+}
+
+static void
+irq_update_stats(const char *action, const struct irq_info *ii)
+{
+	struct if_queue_info *qi = NULL;
+	enum ProcIrqAction pia;
+	const char *tail;
+	int queue;
+
+	if ((tail = strpbrk(action, "-[")) != NULL) {
+		pia = parse_iface_irq_action_tail(tail, &queue);
+		switch (pia) {
+			break;
+
+		case PIA_Rx:
+		case PIA_Tx:
+		case PIA_RxTx:
+			qi = if_queue_by_name(action, queue);
+			break;
+
+		case PIA_LSC:
+			/* can't happen */
+		case PIA_NoMatch:
+			break;
+		}
+	} else
+		qi = if_queue_by_name(action, queue);
+
+	if (qi)
+		queue_update_irqs(qi, ii);
 }
 
 static int
@@ -740,15 +755,8 @@ read_irq_stats(void)
 
 		tok = strtok_r(ii.ii_action, " ,\t", &saveptr);
 		while (tok) {
-			struct if_queue_info *qi;
-			char dev[IFNAMSIZ];
-			int queue;
-
-			if (parse_eth_action(tok, dev, sizeof(dev), &queue) == 1) {
-				if ((qi = if_queue_by_name(dev, queue)) != NULL)
-					queue_update_irqs(qi, &ii);
-			}
-
+			irq_update_stats(tok, &ii);
+	
 			tok = strtok_r(NULL, " ,\t", &saveptr);
 		}
 	}
