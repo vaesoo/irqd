@@ -163,6 +163,12 @@ cpuset_len(const struct cpuset *set)
 	return set->cs_range.rg_to - set->cs_range.rg_from + 1;
 }
 
+static inline int
+cpuset_first_cpu(const struct cpuset *set)
+{
+	return set->cs_range.rg_from;
+}
+
 static inline unsigned
 cpuset_last_cpu(const struct cpuset *set)
 {

@@ -63,20 +63,44 @@ rps_select_nearby_cpu(const struct if_queue_info *qi, int cpu)
 	return NULL;
 }
 
+/*
+ * For multiqueue we assign the queues consecutively, with the first
+ * being assigned by LRU.
+ */
+static struct cpu_info *
+assign_mq_queue(struct interface *iface, int queue)
+{
+	const struct cpuset *cset = iface->if_cpuset;
+	const struct if_queue_info *qi_first = if_queue(iface, 0);
+	int cpu, first_used = cpu_bitmask_ffs(qi_first->qi_cpu_bitmask);
+	struct cpu_info *ci;
+
+	BUG_ON(first_used < 0);
+	cpu = cpuset_first_cpu(cset) + (first_used + queue) % cpuset_len(cset);
+
+	return cpu_add_queue(cpu, iface, queue);
+}
+
 static int
 evenly_balance_queue(struct interface *iface, int queue)
 {
 	struct if_queue_info *qi;
 	struct cpu_info *ci;
 
-	if ((ci = cpu_add_queue_lru(iface, queue)) == NULL)
+	BUG_ON(queue < 0);
+
+	if (queue == 0)
+		ci = cpu_add_queue_lru(iface, queue);
+	else
+		ci = assign_mq_queue(iface, queue);
+	if (ci == NULL)
 		return -1;
 
 	qi = if_queue(iface, queue);
 	if (!cpu_bitmask_set(qi->qi_cpu_bitmask, ci->ci_num))
 		BUG();
 
-	if (iface->if_num_queues == 1 && g_rps_status == RPS_S_ENABLED) {
+	if (!if_is_multiqueue(iface) && g_rps_status == RPS_S_ENABLED) {
 		int ncpus = iface->if_cpuset->cs_strategy.u.evenly.init_steer_cpus;
 		int cpu;
 
