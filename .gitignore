@@ -12,4 +12,8 @@ TAGS
 /install-sh
 /missing
 
+cfg_grammar.*
+cfg_lex.c
+ylwrap
+
 /irqd
