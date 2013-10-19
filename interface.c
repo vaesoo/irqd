@@ -309,6 +309,10 @@ parse_iface_irq_action_tail(const char *tail, int *queue)
 	if (sscanf(tail, "-tx-%u", queue) == 1)
 		return PIA_Tx;
 
+	/* Qualcomm Atheros (alx) */
+	if (sscanf(tail, "-TR-%u", queue) == 1)
+		return PIA_RxTx;
+
 	return PIA_NoMatch;
 }
 
