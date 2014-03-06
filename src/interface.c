@@ -811,10 +811,9 @@ rebalance_cb(struct ev *ev, unsigned short what)
 			ci->ci_ss[OLD].time_squeeze, ci->ci_ss[NEW].time_squeeze);
 #endif /* 0 */
 
-		/* FIXME there may be CPUs not being part of a cpuset, they
-		   are unbalanced */
-		if (ci->ci_si_load > REBALANCE_SI_THRESH
-			|| CPU_SS_DIFF(ci, dropped) > 0)
+		/* Not all CPUs are part of a cpuset */
+		if ((ci->ci_si_load > REBALANCE_SI_THRESH
+			 || CPU_SS_DIFF(ci, dropped) > 0) && set != NULL)
 			cpuset_cpu_busy(set, ci);
 	}
 
