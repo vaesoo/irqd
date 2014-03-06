@@ -1,4 +1,4 @@
-AC_INIT([irqd], [0.7.0])
+AC_INIT([irqd], [0.8.0])
 AC_PROG_INSTALL
 AM_INIT_AUTOMAKE([-Wall foreign])
 AC_PROG_CC
