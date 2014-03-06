@@ -16,4 +16,4 @@ cfg_grammar.*
 cfg_lex.c
 ylwrap
 
-/irqd
+irqd

@@ -16,5 +16,6 @@ AC_SUBST([regular_CFLAGS])
 PKG_CHECK_MODULES([libglib], [glib-2.0])
 PKG_CHECK_MODULES([libnl], [libnl-route-3.0])
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_HEADERS([config.h])
+AC_CONFIG_FILES([Makefile src/Makefile])
 AC_OUTPUT
