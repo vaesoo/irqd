@@ -1,0 +1,82 @@
+'\" t
+.\"     Title: irqdrc
+.\"    Author: [see the "AUTHOR" section]
+.\" Generator: DocBook XSL Stylesheets v1.76.1 <http://docbook.sf.net/>
+.\"      Date: 03/06/2014
+.\"    Manual: \ \&
+.\"    Source: \ \&
+.\"  Language: English
+.\"
+.TH "IRQDRC" "5" "03/06/2014" "\ \&" "\ \&"
+.\" -----------------------------------------------------------------
+.\" * Define some portability stuff
+.\" -----------------------------------------------------------------
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.\" http://bugs.debian.org/507673
+.\" http://lists.gnu.org/archive/html/groff/2009-02/msg00013.html
+.\" ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.ie \n(.g .ds Aq \(aq
+.el       .ds Aq '
+.\" -----------------------------------------------------------------
+.\" * set default formatting
+.\" -----------------------------------------------------------------
+.\" disable hyphenation
+.nh
+.\" disable justification (adjust text to left margin only)
+.ad l
+.\" -----------------------------------------------------------------
+.\" * MAIN CONTENT STARTS HERE *
+.\" -----------------------------------------------------------------
+.SH "NAME"
+irqdrc \- configuration file file *irqd*
+.SH "SYNOPSIS"
+.sp
+\fBirqd\fR
+.SH "DESCRIPTION"
+.sp
+\fBirqdrc\fR is the configuration file for \fBirqd\fR\&. The syntax is modeled after the syntax used by ISC Bind, which means that most of the statements begin with command, followed by some options, and sometimes a block enclosed in curly braces\&. All commands end with a semicolon\&. The syntax supports both C style
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+/* \&.\&.\&. */
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+and C++ single line comments
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+//
+.fi
+.if n \{\
+.RE
+.\}
+.sp
+The basic building block for the configuration file are cpusets, which define a continuous range of CPUs being used for assigning interrupts\&. It also supports Linux Receive Packet Steering (RPS) as well as Transmit Packet Steering (XPS) if supported by your kernel\&.
+.SH "COMMANDS"
+.sp
+.if n \{\
+.RS 4
+.\}
+.nf
+cpuset "network" 0:3 {
+        };
+.fi
+.if n \{\
+.RE
+.\}
+.SH "FILES"
+.sp
+/etc/irqdrc
+.SH "SEE ALSO"
+.sp
+\fBirqd\fR(8), \fBnamed\&.conf(5)\fR
+.SH "AUTHOR"
+.sp
+Holger Eitzenberger <holger@eitzenberger\&.org>
