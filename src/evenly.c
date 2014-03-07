@@ -80,6 +80,25 @@ assign_mq_queue(struct interface *iface, int queue)
 	return cpu_add_queue(cpu, iface, queue);
 }
 
+static void
+check_cpuset_lru(const struct cpuset *set)
+{
+	GSList *node;
+	int min = INT_MAX, max = 0;
+
+	for (node = set->cs_cpu_lru_list; node; node = node->next) {
+		const struct cpu_info *ci = node->data;
+
+		if (min > ci->ci_num_queues)
+			min = ci->ci_num_queues;
+		if (max < ci->ci_num_queues)
+			max = ci->ci_num_queues;
+	}
+
+	if (max - min > 1)
+		err("uneven distribution detected for '%s'", set->cs_name);
+}
+
 static int
 evenly_balance_queue(struct interface *iface, int queue)
 {
@@ -112,6 +131,8 @@ evenly_balance_queue(struct interface *iface, int queue)
 			}
 		}
 	}
+
+	check_cpuset_lru(ci->ci_cpuset);
 
 	return 0;
 }
