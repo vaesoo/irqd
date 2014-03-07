@@ -133,10 +133,7 @@ cpu_del_queue(int cpu, struct if_queue_info *qi)
 	BUG_ON(!ci || ci->ci_num_queues == 0);
 	ci->ci_queues = g_slist_remove(ci->ci_queues, qi);
 	ci->ci_num_queues--;
-
-	set->cs_cpu_lru_list = g_slist_remove(set->cs_cpu_lru_list, ci);
-	set->cs_cpu_lru_list = g_slist_insert_sorted(set->cs_cpu_lru_list, ci,
-												 cpu_cmp);
+	set->cs_cpu_lru_list = g_slist_sort(set->cs_cpu_lru_list, cpu_cmp);
 
 	return -1;
 }
