@@ -73,7 +73,6 @@ assign_mq_queue(struct interface *iface, int queue)
 	const struct cpuset *cset = iface->if_cpuset;
 	const struct if_queue_info *qi_first = if_queue(iface, 0);
 	int cpu, first_used = cpu_bitmask_ffs(qi_first->qi_cpu_bitmask);
-	struct cpu_info *ci;
 
 	BUG_ON(first_used < 0);
 	cpu = cpuset_first_cpu(cset) + (first_used + queue) % cpuset_len(cset);

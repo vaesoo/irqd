@@ -83,7 +83,7 @@ dump_cpus(const char *prefix, const GSList *list)
 	log("%s", buf);
 }
 
-static struct cpu_info *
+static int
 add_queue(struct cpu_info *ci, struct if_queue_info *qi)
 {
 	struct cpuset *set = ci->ci_cpuset;
@@ -97,7 +97,7 @@ add_queue(struct cpu_info *ci, struct if_queue_info *qi)
 
 	ci->ci_queues = g_slist_append(ci->ci_queues, qi);
 
-	return ci;
+	return 0;
 }
 
 struct cpu_info *
@@ -106,7 +106,9 @@ cpu_add_queue(int cpu, struct interface *iface, int queue)
 	struct cpu_info *ci = cpu_nth(cpu);
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	return add_queue(ci, qi);
+	if (add_queue(ci, qi) < 0)
+		return NULL;
+	return ci;
 }
 
 /* assign queue to CPU, select most idle CPU from a cpuset */
@@ -117,7 +119,9 @@ cpu_add_queue_lru(struct interface *iface, int queue)
 	struct cpu_info *ci = set->cs_cpu_lru_list->data;
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	return add_queue(ci, qi);
+	if (add_queue(ci, qi) < 0)
+		return NULL;
+	return ci;
 }
 
 int
