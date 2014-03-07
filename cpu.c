@@ -42,8 +42,8 @@ cpu_cmp(gconstpointer __a, gconstpointer __b)
 	const struct cpu_info *a = __a, *b = __b;
 
 	if (b->ci_num_queues != a->ci_num_queues)
-		return b->ci_num_queues - a->ci_num_queues;
-	return b->ci_num - a->ci_num;
+		return a->ci_num_queues - b->ci_num_queues;
+	return a->ci_num - b->ci_num;
 }
 
 void
@@ -88,13 +88,14 @@ add_queue(struct cpu_info *ci, struct if_queue_info *qi)
 {
 	struct cpuset *set = ci->ci_cpuset;
 
+	ci->ci_num_queues++;
+
 	set->cs_cpu_lru_list = g_slist_remove_link(set->cs_cpu_lru_list,
 		set->cs_cpu_lru_list);
 	set->cs_cpu_lru_list = g_slist_insert_sorted(set->cs_cpu_lru_list, ci,
 												 cpu_cmp);
 
 	ci->ci_queues = g_slist_append(ci->ci_queues, qi);
-	ci->ci_num_queues++;
 
 	return ci;
 }
@@ -116,7 +117,6 @@ cpu_add_queue_lru(struct interface *iface, int queue)
 	struct cpu_info *ci = set->cs_cpu_lru_list->data;
 	struct if_queue_info *qi = if_queue(iface, queue);
 
-	BUG_ON(!ci);
 	return add_queue(ci, qi);
 }
 
