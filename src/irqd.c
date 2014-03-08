@@ -35,6 +35,7 @@ bool config_is_read;
 
 char *irqd_prefix;
 bool no_daemon;
+bool with_debug;
 int verbose;
 enum RpsStatus g_rps_status;
 enum XpsStatus g_xps_status;
@@ -47,13 +48,15 @@ check_opts(int argc, char *argv[])
 {
 	static struct option lopts[] = {
 		{ "config", required_argument, NULL, 'c' },
+		{ "debug", no_argument, NULL, 'd' },	/* implies 'foreground' */
+		{ "foreground", no_argument, NULL, 'f' },
 		{ "verbose", 0, NULL, 'v' },
 		{ "version", 0, NULL, 0 },
 		{ 0 }
 	};
 	int c, idx = 0;
 
-	while ((c = getopt_long(argc, argv, "c:dv", lopts, &idx)) != -1) {
+	while ((c = getopt_long(argc, argv, "c:dfv", lopts, &idx)) != -1) {
 		if (!c) {				/* long-only option */
 			switch (idx) {
 			case 1:				/* version */
@@ -72,6 +75,12 @@ check_opts(int argc, char *argv[])
 
 		case 'd':
 			no_daemon = true;
+			with_debug = true;
+			break;
+
+		case 'f':
+			no_daemon = true;
+			with_debug = false;;
 			break;
 
 		case 'v':				/* verbose */
@@ -314,7 +323,7 @@ main(int argc, char *argv[])
 	if (check_opts(argc, argv) < 0)
 		exit(EXIT_FAILURE);
 
-	if (!no_daemon)
+	if (!no_daemon && !with_debug)
 		openlog("irqd", LOG_PID | LOG_NDELAY, LOG_DAEMON);
 
 	if ((irqd_prefix = getenv("IRQD_PREFIX")) == NULL)

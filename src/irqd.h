@@ -144,6 +144,7 @@ extern enum XpsStatus {
 extern bool config_is_read;
 extern char *irqd_prefix;
 extern bool no_daemon;
+extern bool with_debug;
 extern int verbose;
 
 int id_set_fd_flags(int, int);

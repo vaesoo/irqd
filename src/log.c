@@ -27,7 +27,7 @@ log_va(FILE *fp, char *buf, const char *file, int line, const char *prefix,
 {
 	char *pch = buf, *end = buf + log_buf_len;
 
-	if (no_daemon)
+	if (with_debug)
 		flockfile(fp);
 
 	if (file && line)
@@ -36,7 +36,7 @@ log_va(FILE *fp, char *buf, const char *file, int line, const char *prefix,
 		pch += snprintf(pch, end - pch, "%s: ", prefix);
 	pch += vsnprintf(pch, end - pch, fmt, ap);
 
-	if (no_daemon) {
+	if (with_debug) {
 		if (pch > buf && pch[-1] != '\n')
 			strcat(pch, "\n");
 		fputs_unlocked(buf, fp);
