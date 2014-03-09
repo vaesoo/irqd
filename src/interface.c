@@ -708,7 +708,7 @@ irq_update_stats(const char *action, const struct irq_info *ii)
 	struct if_queue_info *qi = NULL;
 	enum ProcIrqAction pia;
 	const char *tail;
-	int queue;
+	int queue = 0;
 
 	if ((tail = strpbrk(action, "-[")) != NULL) {
 		pia = parse_iface_irq_action_tail(tail, &queue);
