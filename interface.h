@@ -139,4 +139,7 @@ int if_get_queue_stat(struct if_queue_info *);
 
 int queue_set_affinity(const struct if_queue_info *, uint64_t);
 
+int if_assign_cpus(struct interface *);
+int if_remove_cpus(struct interface *);
+
 #endif /* INTERFACE_H */

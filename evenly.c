@@ -26,6 +26,9 @@
    to a Softirq */
 #define CPU_SI_MAP_THRESH		50
 
+static void cpu_dump_queues(const struct cpu_info *) __UNUSED;
+static void cpuset_dump_lru(const char *, const struct cpuset *) __UNUSED;
+
 static bool
 cpu_is_idle(const struct cpu_info *ci)
 {
@@ -232,10 +235,77 @@ done:
 	return 0;
 }
 
-static int
-evenly_interface_down(struct cpuset *set, struct interface *iface)
+static void
+cpu_dump_queues(const struct cpu_info *ci)
 {
-	const struct range *rg = &set->cs_range;
+	GSList *node;
+
+	printf("cpu[%d]: q#=%u ", ci->ci_num, ci->ci_num_queues);
+
+	for (node = ci->ci_queues; node != NULL; node = node->next) {
+		const struct if_queue_info *qi = node->data;
+		const struct interface *iface = qi->qi_iface;
+
+		printf("%s:%d ", iface->if_name, qi->qi_num);
+	}
+	putchar('\n');
+}
+
+static void
+cpuset_dump_lru(const char *prefix, const struct cpuset *set)
+{
+	GSList *node;
+
+	puts(prefix);
+	for (node = set->cs_cpu_lru_list; node != NULL; node = node->next) {
+		const struct cpu_info *ci = node->data;
+
+		cpu_dump_queues(ci);
+	}
+}
+
+/*
+ * Which IRQ to remove from most busy CPU?  Can be a difficult decision.
+ *
+ * For now we just choose last IRQ in list.  We determine the interface
+ * it is part of, then remove it completely from the configuration.
+ * Afterwards we add it to the configuration again.
+ *
+ * By reconfiguring all interface queues we make sure that configuration
+ * is same compared to device having appeared for the first time, and
+ * also avoid any issues with multiqueue NICs (e. g. two MQ queues
+ * assigned to same CPU).
+ *
+ * We repeat this process until imbalance is solved.
+ */
+static int
+evenly_interface_down(struct cpuset *set, struct interface *iface_down)
+{
+	if (set->cs_cpu_lru_list == NULL)
+		return 0;
+
+	do {
+		struct cpu_info *ci_first, *ci_last;
+		const struct if_queue_info *qi;
+		struct interface *iface;
+		int minq, maxq;
+
+		ci_first = set->cs_cpu_lru_list->data;
+		minq = ci_first->ci_num_queues;
+		ci_last = g_slist_last(set->cs_cpu_lru_list)->data;
+		maxq = ci_last->ci_num_queues;
+		if (maxq - minq < 2)
+			break;
+
+		qi = g_slist_last(ci_last->ci_queues)->data;
+		iface = qi->qi_iface;
+		if_remove_cpus(iface);
+
+		log("%s: rebalancing interface (%d queue(s))", iface->if_name,
+			iface->if_num_queues);
+		if (if_assign_cpus(iface) < 0)
+			break;
+	} while (1);
 
 	return 0;
 }
