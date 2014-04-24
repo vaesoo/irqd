@@ -70,6 +70,7 @@ struct evenly_args {
 };
 
 struct strategy;
+struct cpuset;
 
 struct strategy_type {
 	const char *name;
@@ -90,7 +91,7 @@ struct strategy_type {
 	 * going down.  The handler is called before the queues are removed
 	 * from the CPUs.
 	 */
-	int (* interface_down)(struct interface *);
+	int (* interface_down)(struct cpuset *, struct interface *);
 };
 
 struct strategy {
