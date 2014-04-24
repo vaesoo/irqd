@@ -531,8 +531,6 @@ if_on_down(struct interface *iface, const char *dev)
 
 	log("%s: down", iface->if_name);
 
-	cpu_dump_map();
-
 	return 0;
 }
 
