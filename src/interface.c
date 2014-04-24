@@ -483,11 +483,30 @@ queue_set_affinity(const struct if_queue_info *qi, uint64_t cpumask)
 	return 0;
 }
 
-static int
-if_on_up(struct interface *iface, const char *dev)
+/**
+ * if_assign_cpus() - assign CPUs to an interface
+ *
+ * High level function to assign CPUs to all queues of an interface.
+ * It does so by hooking into the strategy handlers.
+ *
+ * Number of queues has to be determined earlier.
+ */
+int
+if_assign_cpus(struct interface *iface)
 {
 	int i;
 
+	BUG_ON(iface->if_num_queues == 0);
+
+	for (i = 0; i < iface->if_num_queues; i++)
+		cpuset_balance_queue(iface->if_cpuset, iface, i);
+
+	return 0;
+}
+
+static int
+if_on_up(struct interface *iface, const char *dev)
+{
 	if (g_rps_status == RPS_S_NEED_CHECK) {
 		g_rps_status = if_can_rps(iface) ? RPS_S_ENABLED : RPS_S_DISABLED;
 		g_xps_status = if_can_xps(iface) ? XPS_S_ENABLED : XPS_S_DISABLED;
@@ -501,19 +520,25 @@ if_on_up(struct interface *iface, const char *dev)
 		return -1;
 	if (iface->if_num_queues == 0)
 		if_add_queue(iface, 0, -1, -1); /* lo, tun, etc. */
+
 	log("%s: detected %d queue(s), '%s' cpuset", iface->if_name,
 		iface->if_num_queues, iface->if_cpuset->cs_name);
 
-	for (i = 0; i < iface->if_num_queues; i++)
-		cpuset_balance_queue(iface->if_cpuset, iface, i);
+	if_assign_cpus(iface);
 
 	log("%s: up", iface->if_name);
 
 	return 0;
 }
 
-static int
-if_on_down(struct interface *iface, const char *dev)
+/**
+ * if_remove_cpus() - remove an interface from all CPUs
+ *
+ * Low-level function to remove all queues of an interface from
+ * all the currently used CPUs.
+ */
+int
+if_remove_cpus(struct interface *iface)
 {
 	struct cpuset *set = iface->if_cpuset;
 	int queue;
@@ -527,6 +552,15 @@ if_on_down(struct interface *iface, const char *dev)
 				cpu_del_queue(cpu, qi);
 	}
 
+	return 0;
+}
+
+static int
+if_on_down(struct interface *iface, const char *dev)
+{
+	struct cpuset *set = iface->if_cpuset;
+
+	if_remove_cpus(iface);
 	cpuset_interface_down(set, iface);
 
 	log("%s: down", iface->if_name);

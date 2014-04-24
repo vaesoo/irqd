@@ -1,3 +1,9 @@
+* when traversing a cpu_info.ci_queues list there is no way
+  from differentiating NICs from other devices.  One way to solve
+  this is prbbly by introducing a 'struct irq', which holds the
+  actual type of IRQ, or just holds a ref to the 'struct device'
+  it is part of.
+
 * use bison %locations
 
 * IRQs: since introducing split RX/TX IRQs check the IRQ stats
