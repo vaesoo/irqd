@@ -518,8 +518,6 @@ if_on_down(struct interface *iface, const char *dev)
 	struct cpuset *set = iface->if_cpuset;
 	int queue;
 
-	cpuset_interface_down(set, iface);
-
 	for (queue = 0; queue < iface->if_num_queues; queue++) {
 		struct if_queue_info *qi = if_queue(iface, queue);
 		int cpu;
@@ -528,6 +526,8 @@ if_on_down(struct interface *iface, const char *dev)
 			if (cpu_bitmask_clear(qi->qi_cpu_bitmask, cpu))
 				cpu_del_queue(cpu, qi);
 	}
+
+	cpuset_interface_down(set, iface);
 
 	log("%s: down", iface->if_name);
 

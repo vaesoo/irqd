@@ -233,8 +233,10 @@ done:
 }
 
 static int
-evenly_interface_down(struct interface *iface)
+evenly_interface_down(struct cpuset *set, struct interface *iface)
 {
+	const struct range *rg = &set->cs_range;
+
 	return 0;
 }
 

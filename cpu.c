@@ -738,7 +738,7 @@ int
 cpuset_interface_down(struct cpuset *set, struct interface *iface)
 {
 	if (set->cs_strategy.s_type->interface_down)
-		return set->cs_strategy.s_type->interface_down(iface);
+		return set->cs_strategy.s_type->interface_down(set, iface);
 
 	return 0;
 }
