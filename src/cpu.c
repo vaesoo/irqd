@@ -335,9 +335,9 @@ do_stat_cpu(struct cpu_info *ci)
 	if (frm_tot > frm_tot_old) {
 		unsigned d = frm_tot - frm_tot_old;
 
-		if (frm_busy > frm_busy_old)
+		if (frm_busy >= frm_busy_old)
 			ci->ci_load = (frm_busy - frm_busy_old) * 100 / d;
-		if (psc->psc_softirq > psco->psc_softirq)
+		if (psc->psc_softirq >= psco->psc_softirq)
 			ci->ci_si_load = (psc->psc_softirq - psco->psc_softirq) * 100 / d;
 	}
 
