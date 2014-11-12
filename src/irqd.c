@@ -224,7 +224,12 @@ irq_set_affinity(int irq, uint64_t mask)
 		return -1;
 	}
 
-	len = snprintf(buf, sizeof(buf), "%" PRIx64 "\n", mask);
+	if (!(mask >> 32)) {
+		len = snprintf(buf, sizeof(buf), "%" PRIx64 "\n", mask);
+	} else {
+		len = snprintf(buf, sizeof(buf), "%" PRIx64 ",%" PRIx64 "\n", mask >> 32, mask & 0xffffffff);
+	}
+
 	nwritten = write(fd, buf, len);
 	if (nwritten < 0)
 		err("irq%d: error writing smp_affinity: %m", irq);
