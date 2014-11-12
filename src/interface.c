@@ -817,7 +817,7 @@ rebalance_cb(struct ev *ev, unsigned short what)
 
 	BUG_ON(what != EV_READ);
 	if ((nread = read(ev->fd, &exp, sizeof(exp))) < 0) {
-		if (errno == -EAGAIN)
+		if (errno == EAGAIN)
 			return EvOk;
 		err("read: %m");
 		return EvStop;
